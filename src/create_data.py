@@ -1,10 +1,11 @@
 # All data reading manipulation for a dataset takes place here.
-
 import torch
 import numpy as np
 from sklearn.datasets import load_svmlight_files
 
-
+# custom imports
+from utils.iterator import *
+from utils.iterator import CombinedIterator, TextClassificationDataset
 
 class DomainAdaptationAmazon:
     """
