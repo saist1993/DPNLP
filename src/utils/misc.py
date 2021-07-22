@@ -1,5 +1,7 @@
 import re
 import scipy
+import torch
+from tqdm.auto import tqdm
 
 def calculate_accuracy_classification(predictions, labels):
     top_predictions = predictions.argmax(1, keepdim = True)
@@ -24,3 +26,22 @@ def clean_text_tweet(text:str):
 def tester(text):
     print(f"this is the {text}")
     return text
+
+def get_pretrained_embedding(initial_embedding, pretrained_vectors, vocab, device):
+    pretrained_embedding = torch.FloatTensor(initial_embedding.weight.clone()).cpu().detach().numpy()
+
+    # if device == 'cpu':
+    #     pretrained_embedding = torch.FloatTensor(initial_embedding.weight.clone()).cpu().detach().numpy()
+    # else:
+    #     pretrained_embedding = torch.FloatTensor(initial_embedding.weight.clone()).cuda().detach().numpy()
+
+    unk_tokens = []
+
+    for idx, token in tqdm(enumerate(vocab.itos)):
+        try:
+            pretrained_embedding[idx] = pretrained_vectors[token]
+        except KeyError:
+            unk_tokens.append(token)
+
+    pretrained_embedding = torch.from_numpy(pretrained_embedding).to(device)
+    return pretrained_embedding, unk_tokens
