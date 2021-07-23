@@ -174,6 +174,9 @@ class DomainAdaptationAmazon:
         }
         iterators.append(iterator_set)
 
+        other_meta_data = {}
+        other_meta_data['task'] = 'domain_adaptation'
+
         return vocab, number_of_labels, number_of_labels, iterators, {} # empty dict for other_meta_data
 
 
@@ -186,6 +189,7 @@ def generate_data_iterators(dataset_name:str, **kwargs):
         vocab, number_of_labels, number_of_aux_labels, iterators, other_meta_data = dataset_creator.run()
     else:
         raise CustomError("No such dataset")
+
 
     return vocab, number_of_labels, number_of_aux_labels, iterators, other_meta_data
 

@@ -20,6 +20,9 @@ def clean_text(text:str):
     text = text.strip()
     return text
 
+clean_text_functional = clean_text
+
+
 def clean_text_tweet(text:str):
     return text.replace('#', '').replace('@', '')
 
@@ -45,3 +48,14 @@ def get_pretrained_embedding(initial_embedding, pretrained_vectors, vocab, devic
 
     pretrained_embedding = torch.from_numpy(pretrained_embedding).to(device)
     return pretrained_embedding, unk_tokens
+
+def resolve_device(device = None) -> torch.device:
+    """Resolve a torch.device given a desired device (string)."""
+    if device is None or device == 'gpu':
+        device = 'cuda'
+    if isinstance(device, str):
+        device = torch.device(device)
+    if not torch.cuda.is_available() and device.type == 'cuda':
+        device = torch.device('cpu')
+        print('No cuda devices were available. The model runs on CPU')
+    return device
