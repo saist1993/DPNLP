@@ -111,7 +111,7 @@ class Linear(nn.Module):
             elif i == 0:
                 self.fc_layers.append(nn.Linear(input_dim, hidden_dim[i]))
             else:
-                self.fc_layers.append(nn.Linear(hidden_dim[i-1], output_dim, bias=False)) # @TODO: see if there is a need for a softmax via sigmoid or something
+                self.fc_layers.append(nn.Linear(hidden_dim[i-1], output_dim, bias=True)) # @TODO: see if there is a need for a softmax via sigmoid or something
 
         self.fc_layers = nn.ModuleList(self.fc_layers)
 
@@ -149,8 +149,8 @@ class LinearAdv(nn.Module):
 
     def forward(self, params):
 
-        text, lengths, gradient_reversal, return_hidden = \
-            params['input'], params['lengths'], params['gradient_reversal'], params['return_hidden']
+        text, gradient_reversal = \
+            params['input'], params['gradient_reversal']
 
         original_hidden = self.encoder(params)
 
@@ -174,11 +174,16 @@ class LinearAdv(nn.Module):
             _params['x'] = hidden
         adv_output = self.adv(_params)
 
+        #
+        # if return_hidden:
+        #     return prediction, adv_output, original_hidden, hidden
 
-        if return_hidden:
-            return prediction, adv_output, original_hidden, hidden
+        output = {
+            'prediction': prediction,
+            'adv_output': adv_output
+        }
 
-        return prediction, adv_output
+        return output
 
 if __name__ == '__main__':
     #

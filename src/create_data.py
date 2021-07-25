@@ -60,7 +60,14 @@ class DomainAdaptationAmazon:
         lengths = torch.LongTensor([len(x) for x in input])
         input = torch.FloatTensor(input)
 
-        return labels, input, lengths, aux
+        input_data = {
+            'labels': labels,
+            'input': input,
+            'lengths': lengths,
+            'aux': aux
+        }
+
+        return input_data
 
     def load_file(self, domain_name):
         for location in self.file_location:

@@ -8,11 +8,16 @@ import pickle
 import gensim
 import logging
 import numpy as np
+from functools import partial
+from mytorch.utils.goodies import *
 from typing import Optional, Callable
 
 # Custom Imports
 import config
 from utils.misc import *
+from models.linear import *
+from training_loops.simple_loop import training_loop as simple_training_loop
+from utils.fairness_functions import *
 from tokenizer_wrapper import init_tokenizer
 from create_data import generate_data_iterators
 
@@ -98,7 +103,7 @@ def main(emb_dim:int,
     # kind of model to use.
     if "amazon" in dataset_name:
         logger.info(f"model chossen amazon model")
-        model_params = config.amazon_model
+        model_arch_params = config.amazon_model
 
     # setting up seeds for reproducibility
     torch.manual_seed(seed)
@@ -168,7 +173,116 @@ def main(emb_dim:int,
             'output_dim': output_dim,
         }
 
+        model_arch = model_arch_params
+        model_arch['encoder']['input_dim'] = input_dim
+        model_arch['main_task_classifier']['output_dim'] = output_dim
+        model_arch['adv']['output_dim'] = output_dim
+        model_params = {
+            'model_arch': model_arch,
+            'noise_layer': noise_layer,
+        }
 
+        model = LinearAdv(model_params)
 
+    # More stuff related to word embedding needs to be added here.
+    model = model.to(device)
 
+    # choosing the optimization function.
+    if optimizer.lower() == 'adagrad':
+        opt_fn = partial(torch.optim.Adagrad)
+    elif optimizer.lower() == 'adam':
+        opt_fn = partial(torch.optim.Adam)
+    elif optimizer.lower() == 'sgd':
+        opt_fn = partial(torch.optim.SGD)
+    else:
+        raise CustomError("no optimizer selected")
+    optimizer = make_opt(model, opt_fn, lr=lr)
 
+    # setup
+    if use_lr_schedule:
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer=optimizer,
+                mode='min',
+                patience=3,
+                factor=0.1,
+                verbose=True
+            )
+    else:
+        lr_scheduler = None
+
+    # setting up loss function
+    if number_of_labels == 1:
+        criterion = nn.MSELoss()
+        if use_wandb: wandb.log({'loss': 'MSEloss'})
+    else:
+        if fair_grad:
+            criterion = nn.CrossEntropyLoss(reduction='none')
+        else:
+            criterion = nn.CrossEntropyLoss()
+        if use_wandb: wandb.log({'loss': 'CrossEntropy'})
+
+    # setting up accuracy calculation function.
+    accuracy_calculation_function = calculate_accuracy_regression if number_of_labels == 1 \
+        else calculate_accuracy_classification
+
+    # Fairness calculation function
+    fairness_function = get_fairness_function(fairness_function)
+    fairness_score_function = get_fairness_score_function(fairness_score_function)
+
+    # Setup the training loop
+    save_wrt_loss = False # if True; saves model wrt to lowest validation loss else highest training accuracy
+
+    # Several of them are not useful.
+    training_loop_params = {
+        'is_adv': is_adv,
+        'loss_aux_scale': adv_loss_scale,
+        'is_regression': regression,
+        'is_post_hoc': False,  # here the post-hoc has to be false
+        'save_model': True,
+        'seed': seed,
+        'only_perturbate': only_perturbate,
+        'mode_of_loss_scale': mode_of_loss_scale,
+        'training_loop_type': training_loop_type,
+        'hidden_l1_scale': hidden_l1_scale,
+        'hidden_l2_scale': hidden_l2_scale,
+        'return_hidden': hidden_loss,
+        'reset_classifier': reset_classifier,
+        'reset_adv': reset_adv,
+        'encoder_learning_rate_second_phase': encoder_learning_rate_second_phase,
+        'classifier_learning_rate_second_phase': classifier_learning_rate_second_phase,
+        'eps': eps,
+        'eps_scale': eps_scale,
+        'fair_grad': fair_grad,
+        'reset_fairness': reset_fairness,
+        'use_lr_schedule': use_lr_schedule,
+        'lr_scheduler': lr_scheduler,
+        'fairness_function': fairness_function,
+        'fairness_score_function': fairness_score_function,
+        'task': other_data_metadata['task'],
+        'save_wrt_loss': save_wrt_loss
+    }
+
+    best_test_acc, best_valid_acc, test_acc_at_best_valid_acc  = simple_training_loop(
+        n_epochs=epochs,
+        model=model,
+        iterator=iterators,
+        optimizer=optimizer,
+        criterion=criterion,
+        device=device,
+        model_save_name=model_save_name,
+        accuracy_calculation_function=accuracy_calculation_function,
+        wandb=wandb,
+        other_params=training_loop_params
+    )
+
+    print(f"BEST Test Acc: {best_test_acc} ||"
+          f" Actual Test Acc: {test_acc_at_best_valid_acc} || Best Valid Acc {best_valid_acc}")
+
+    if use_wandb:
+        wandb.config.update(
+            {
+                'best_test_acc': best_test_acc,
+                'best_valid_acc': best_valid_acc,
+                'test_acc_at_best_valid_acc': test_acc_at_best_valid_acc
+            }
+        )

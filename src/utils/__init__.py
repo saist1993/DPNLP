@@ -1,2 +1,3 @@
 from . import (misc,
-               iterator)
+               iterator,
+               fairness_functions)
