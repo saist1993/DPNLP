@@ -114,6 +114,8 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
 
     with torch.no_grad():
         for items in tqdm(iterator):
+            for key in items.keys():
+                items[key] = items[key].to(device)
             items['gradient_reversal'] = is_gradient_reversal
             output = model(items)
 
