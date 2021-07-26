@@ -81,7 +81,7 @@ if __name__ == '__main__':
     # optimizer = 'sgd'
 
 
-    lrs = [('adam', 0.01), ('sgd', 0.02), ('sgd', 0.01)]
+    lrs = [('adam', 0.001)]
 
     if noise_layer:
         # epss = map(float, args.eps.strip('[]').split(','))
