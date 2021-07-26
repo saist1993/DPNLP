@@ -7,13 +7,13 @@ import torch
 import logging
 import numpy as np
 from tqdm.auto import tqdm
-from common_functionality import *
+from .common_functionality import *
 
 
 logger = logging.getLogger(__name__)
 
 
-def train(model, iterator, optimizer, device, accuracy_calculation_function, other_params):
+def train(model, iterator, optimizer, criterion, device, accuracy_calculation_function, other_params):
     # still need to do something about the device thingy!!
 
     model.train()
@@ -21,7 +21,6 @@ def train(model, iterator, optimizer, device, accuracy_calculation_function, oth
     is_gradient_reversal = other_params['gradient_reversal']
     is_adv = other_params['is_adv'] # adv
     is_regression = other_params['is_regression']
-    criterion = other_params['criterion']
     task = other_params['task']
     if task == 'domain_adaptation':
         assert is_adv == True
@@ -39,10 +38,11 @@ def train(model, iterator, optimizer, device, accuracy_calculation_function, oth
 
     for items in tqdm(iterator):
         items['gradient_reversal'] = is_gradient_reversal
+        optimizer.zero_grad()
         output = model(items)
 
         if task == 'domain_adaptation':
-            output['predictions'] = output['predictions'][items['aux'] == 0]  # 0 is the src domain.
+            output['prediction'] = output['prediction'][items['aux'] == 0]  # 0 is the src domain.
             items['labels'] = items['labels'][items['aux'] == 0]
 
 
@@ -84,7 +84,7 @@ def train(model, iterator, optimizer, device, accuracy_calculation_function, oth
 
     return return_output
 
-def evaluate(model, iterator, optimizer, device, accuracy_calculation_function, other_params):
+def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation_function, other_params):
     # works same as train loop with few exceptions. It does have code repetation
     model.eval()
 
@@ -101,7 +101,6 @@ def evaluate(model, iterator, optimizer, device, accuracy_calculation_function, 
     is_gradient_reversal = other_params['gradient_reversal']
     is_adv = other_params['is_adv'] # adv
     is_regression = other_params['is_regression']
-    criterion = other_params['criterion']
     task = other_params['task']
     if task == 'domain_adaptation':
         assert is_adv == True
@@ -114,9 +113,9 @@ def evaluate(model, iterator, optimizer, device, accuracy_calculation_function, 
             items['gradient_reversal'] = is_gradient_reversal
             output = model(items)
 
-            if task == 'domain_adaptation':
-                output['predictions'] = output['predictions'][items['aux'] == 0]  # 0 is the src domain.
-                output['labels'] = output['labels'][items['aux'] == 0]
+            # if task == 'domain_adaptation':
+            #     output['prediction'] = output['prediction'][items['aux'] == 1]  # 0 is the src domain.
+            #     items['labels'] = items['labels'][items['aux'] == 0]
 
             if is_regression:
                 loss_main = criterion(output['prediction'].squeeze(), items['labels'].squeeze())
@@ -127,10 +126,10 @@ def evaluate(model, iterator, optimizer, device, accuracy_calculation_function, 
                 if is_adv:
                     loss_aux = criterion(output['adv_output'], items['aux'])
 
-            all_preds.append(output['predictions'].argmax(1))
+            all_preds.append(output['prediction'].argmax(1))
             y.append(items['labels'])
 
-            if "aux" in items.key():
+            if "aux" in items.keys():
                 s.append(items['aux'])
 
             acc_main = accuracy_calculation_function(output['prediction'], items['labels'])
@@ -204,6 +203,9 @@ def training_loop( n_epochs:int,
     save_wrt_loss = other_params['save_wrt_loss']
     total_epochs = n_epochs # this needs to be thought in more depth
 
+    if other_params['is_adv']:
+        other_params['gradient_reversal'] = True
+
     # update adv loss with every epoch
     def get_current_adv_scale(epoch_number, last_scale):
         if mode_of_adv_loss_scale == 'constant':
@@ -227,9 +229,11 @@ def training_loop( n_epochs:int,
         logger.info(f"current adv scale is {current_adv_scale}")
         train_output = train(model, iterator['train_iterator'], optimizer, criterion, device,
                                           accuracy_calculation_function, other_params)
-        val_output = train(model, iterator['valid_iterator'], optimizer, criterion, device,
+
+
+        val_output = evaluate(model, iterator['valid_iterator'], optimizer, criterion, device,
                              accuracy_calculation_function, other_params)
-        test_output = train(model, iterator['test_iterator'], optimizer, criterion, device,
+        test_output = evaluate(model, iterator['test_iterator'], optimizer, criterion, device,
                              accuracy_calculation_function, other_params)
 
         logger.info(f"valid dict: {val_output}")

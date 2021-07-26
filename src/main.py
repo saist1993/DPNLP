@@ -160,10 +160,10 @@ def main(emb_dim:int,
     if len(vocab) > 10: # it is text and not just feature vector
         input_dim = len(vocab)
     else:
-        for items in iterators[0]['train_iterators']:
+        for items in iterators[0]['train_iterator']:
             item = items
             break
-        input_dim = item[1].shape[1]
+        input_dim = item['input'].shape[1]
 
     model_name = copy.copy(model)
 
@@ -180,6 +180,8 @@ def main(emb_dim:int,
         model_params = {
             'model_arch': model_arch,
             'noise_layer': noise_layer,
+            'eps': eps,
+            'device': device
         }
 
         model = LinearAdv(model_params)
@@ -232,6 +234,7 @@ def main(emb_dim:int,
     # Setup the training loop
     save_wrt_loss = False # if True; saves model wrt to lowest validation loss else highest training accuracy
 
+
     # Several of them are not useful.
     training_loop_params = {
         'is_adv': is_adv,
@@ -262,27 +265,29 @@ def main(emb_dim:int,
         'save_wrt_loss': save_wrt_loss
     }
 
-    best_test_acc, best_valid_acc, test_acc_at_best_valid_acc  = simple_training_loop(
-        n_epochs=epochs,
-        model=model,
-        iterator=iterators,
-        optimizer=optimizer,
-        criterion=criterion,
-        device=device,
-        model_save_name=model_save_name,
-        accuracy_calculation_function=accuracy_calculation_function,
-        wandb=wandb,
-        other_params=training_loop_params
-    )
 
-    print(f"BEST Test Acc: {best_test_acc} ||"
-          f" Actual Test Acc: {test_acc_at_best_valid_acc} || Best Valid Acc {best_valid_acc}")
-
-    if use_wandb:
-        wandb.config.update(
-            {
-                'best_test_acc': best_test_acc,
-                'best_valid_acc': best_valid_acc,
-                'test_acc_at_best_valid_acc': test_acc_at_best_valid_acc
-            }
+    for iterator in iterators:
+        best_test_acc, best_valid_acc, test_acc_at_best_valid_acc  = simple_training_loop(
+            n_epochs=epochs,
+            model=model,
+            iterator=iterator,
+            optimizer=optimizer,
+            criterion=criterion,
+            device=device,
+            model_save_name=model_save_name,
+            accuracy_calculation_function=accuracy_calculation_function,
+            wandb=wandb,
+            other_params=training_loop_params
         )
+
+        print(f"BEST Test Acc: {best_test_acc} ||"
+              f" Actual Test Acc: {test_acc_at_best_valid_acc} || Best Valid Acc {best_valid_acc}")
+
+        if use_wandb:
+            wandb.config.update(
+                {
+                    'best_test_acc': best_test_acc,
+                    'best_valid_acc': best_valid_acc,
+                    'test_acc_at_best_valid_acc': test_acc_at_best_valid_acc
+                }
+            )

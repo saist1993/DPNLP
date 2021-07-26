@@ -104,7 +104,7 @@ class DomainAdaptationAmazon:
 
         # stack src_x_train, src_y_train to get one output.
         src_x_train = np.vstack(src_x_train)
-        src_y_train = np.vstack(src_y_train)
+        src_y_train = np.hstack(src_y_train)
         return src_x_train, src_y_train, target_x_train, target_y_train, target_x_test, target_y_test
 
 
@@ -117,7 +117,7 @@ class DomainAdaptationAmazon:
         no_examples_to_sample = len(xs) - len(xt)
         sampled_index = np.random.randint(xt.shape[0], size=no_examples_to_sample)
         xt = np.vstack([xt, xt[sampled_index, :]])
-        yt = np.vstack([yt, yt[sampled_index, :]])
+        yt = np.hstack([yt, yt[sampled_index]])
 
 
         # shuffling data
@@ -184,7 +184,7 @@ class DomainAdaptationAmazon:
         other_meta_data = {}
         other_meta_data['task'] = 'domain_adaptation'
 
-        return vocab, number_of_labels, number_of_labels, iterators, {} # empty dict for other_meta_data
+        return vocab, number_of_labels, number_of_labels, iterators, other_meta_data # empty dict for other_meta_data
 
 
 

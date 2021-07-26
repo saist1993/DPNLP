@@ -145,12 +145,16 @@ class LinearAdv(nn.Module):
         self.adv.apply(initialize_parameters)  # don't know, if this is needed.
         self.classifier.apply(initialize_parameters)  # don't know, if this is needed.
         self.encoder.apply(initialize_parameters)  # don't know, if this is needed.
+        self.eps = params['eps']
+        self.device = params['device']
 
 
     def forward(self, params):
 
         text, gradient_reversal = \
             params['input'], params['gradient_reversal']
+
+        params['input'] = params['input'].to(self.device)
 
         original_hidden = self.encoder(params)
 
@@ -163,15 +167,15 @@ class LinearAdv(nn.Module):
 
         _params = {}
         # classifier setup
-        _params['x'] = hidden
+        _params['input'] = hidden
         prediction = self.classifier(_params)
 
 
         # adversarial setup
         if gradient_reversal:
-            _params['x'] = GradReverse.apply(hidden)
+            _params['input'] = GradReverse.apply(hidden)
         else:
-            _params['x'] = hidden
+            _params['input'] = hidden
         adv_output = self.adv(_params)
 
         #
@@ -184,6 +188,10 @@ class LinearAdv(nn.Module):
         }
 
         return output
+
+    @property
+    def layers(self):
+        return torch.nn.ModuleList([self.encoder, self.classifier, self.adv])
 
 if __name__ == '__main__':
     #

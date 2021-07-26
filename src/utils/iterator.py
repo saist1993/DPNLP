@@ -105,9 +105,9 @@ class CombinedIterator:
     def __iter__(self):
 
         for item1, item2 in zip(self.itera, self.iterb):
-            new_item = []
-            for i in range(len(item1)):
-                new_item.append(torch.cat((item1[i], item2[i]), 0))
+            new_item = {}
+            for key in item1.keys():
+                new_item[key] = torch.cat((item1[key], item2[key]), 0)
 
             yield new_item
 
