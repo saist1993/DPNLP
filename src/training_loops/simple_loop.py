@@ -236,11 +236,15 @@ def training_loop( n_epochs:int,
         train_output = train(model, iterator['train_iterator'], optimizer, criterion, device,
                                           accuracy_calculation_function, other_params)
 
+        # model.eps = 1000
+
 
         val_output = evaluate(model, iterator['valid_iterator'], optimizer, criterion, device,
                              accuracy_calculation_function, other_params)
         test_output = evaluate(model, iterator['test_iterator'], optimizer, criterion, device,
                              accuracy_calculation_function, other_params)
+
+        # model.eps = other_params['eps']
 
         logger.info(f"valid dict: {val_output}")
         logger.info(f"test dict: {test_output}")

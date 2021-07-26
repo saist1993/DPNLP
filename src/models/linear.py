@@ -233,7 +233,9 @@ if __name__ == '__main__':
     model_arch['adv']['output_dim'] = 2
     model_params = {
         'model_arch': config.amazon_model,
-        'noise_layer': True
+        'noise_layer': True,
+        'eps': 10.0,
+        'device': 'cpu'
     }
     la = LinearAdv(model_params)
     print(la)

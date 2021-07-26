@@ -262,7 +262,8 @@ def main(emb_dim:int,
         'fairness_function': fairness_function,
         'fairness_score_function': fairness_score_function,
         'task': other_data_metadata['task'],
-        'save_wrt_loss': save_wrt_loss
+        'save_wrt_loss': save_wrt_loss,
+        'noise_layer': noise_layer
     }
 
 
