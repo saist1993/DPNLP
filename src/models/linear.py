@@ -154,8 +154,6 @@ class LinearAdv(nn.Module):
         text, gradient_reversal = \
             params['input'], params['gradient_reversal']
 
-        params['input'] = params['input'].to(self.device)
-
         original_hidden = self.encoder(params)
 
         if self.noise_layer:

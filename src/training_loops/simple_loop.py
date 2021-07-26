@@ -37,6 +37,10 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         loss_aux_scale = other_params['loss_aux_scale']
 
     for items in tqdm(iterator):
+
+        for key in items.keys():
+            items[key] = items[key].to(device)
+
         items['gradient_reversal'] = is_gradient_reversal
         optimizer.zero_grad()
         output = model(items)
