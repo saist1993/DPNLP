@@ -42,7 +42,7 @@ if __name__ == '__main__':
     assert args.epochs != None
 
     # create main logging dir
-    logs_dir = Path('logs')
+    logs_dir = Path('../logs')
     create_dir(logs_dir)
 
     # create dataset dir in logs_dir
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     is_adv = str2bool(args.is_adv)
     bs = 64
     only_perturbate = True
-    mode_of_loss_scale = 'exp'
+    mode_of_loss_scale = 'linear' # linear atleast for amazon!
     # optimizer = 'sgd'
 
 

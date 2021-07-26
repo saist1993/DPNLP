@@ -243,7 +243,7 @@ def training_loop( n_epochs:int,
                              accuracy_calculation_function, other_params)
 
         logger.info(f"valid dict: {val_output}")
-        logger.info(f"valid dict: {test_output}")
+        logger.info(f"test dict: {test_output}")
 
         # calculate leakage - still need to be implemented.
         # @TODO: Complete the implementation of the leakge.
