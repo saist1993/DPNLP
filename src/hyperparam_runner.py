@@ -34,6 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--adv_start', '-adv_s', help="start of adv scale for increment increase for ex: 0.1", type=float)
     parser.add_argument('--adv_end', '-adv_e', help="end of adv scale 1.0", type=float)
     parser.add_argument('--epochs', '-epochs', help="epochs!", type=int)
+    parser.add_argument('--use_lr_schedule', '-use_lr_schedule', help="use_lr_schedule!", type=str)
 
     args = parser.parse_args()
 
@@ -79,6 +80,8 @@ if __name__ == '__main__':
     only_perturbate = True
     mode_of_loss_scale = 'linear' # linear atleast for amazon!
     # optimizer = 'sgd'
+    use_lr_schedule = str2bool(args.use_lr_schedule)
+
 
 
     lrs = [('adam', 0.001)]
@@ -155,7 +158,7 @@ if __name__ == '__main__':
                          fair_grad=False,
                          reset_fairness=False,
                          use_adv_dataset=True,
-                         use_lr_schedule=True,
+                         use_lr_schedule=use_lr_schedule,
                          fairness_function='demographic_parity',
                          fairness_score_function=fairness_score_function,
                          sample_specific_class=True
