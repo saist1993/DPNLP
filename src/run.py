@@ -53,6 +53,7 @@ from typing import Optional
 @click.option('-fairness_function', '--fairness_function', type=str, default='equal_odds', help="the fairness measure to implement while employing fairgrad.")
 @click.option('-fairness_score_function', '--fairness_score_function', type=str, default='grms', help="The fairness score function.")
 @click.option('-sample_specific_class', '--sample_specific_class', type=bool, default=False, help="samples only specific classes. Specified in create_data.BiasinBiosSimpleAdv class")
+@click.option('-calculate_leakage', '--calculate_leakage', type=bool, default=False, help="leakage from the test set.")
 def run(emb_dim:int,
          spacy_model:str,
          seed:int,
@@ -102,7 +103,8 @@ def run(emb_dim:int,
          use_lr_schedule:bool,
          fairness_function:str,
          fairness_score_function:str,
-         sample_specific_class:bool
+         sample_specific_class:bool,
+         calculate_leakage:bool
          ):
     main.main(emb_dim,
              spacy_model,
@@ -153,7 +155,8 @@ def run(emb_dim:int,
              use_lr_schedule,
              fairness_function,
              fairness_score_function,
-             sample_specific_class
+             sample_specific_class,
+             calculate_leakage
              )
 
 if __name__ == '__main__':

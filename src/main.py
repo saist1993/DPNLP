@@ -74,7 +74,8 @@ def main(emb_dim:int,
          use_lr_schedule:bool,
          fairness_function:str,
          fairness_score_function:str,
-         sample_specific_class:bool
+         sample_specific_class:bool,
+         calculate_leakage:bool
          ):
     '''
         A place keep all the design choices.
@@ -263,7 +264,9 @@ def main(emb_dim:int,
         'fairness_score_function': fairness_score_function,
         'task': other_data_metadata['task'],
         'save_wrt_loss': save_wrt_loss,
-        'noise_layer': noise_layer
+        'noise_layer': noise_layer,
+        'calculate_leakage': calculate_leakage,
+        'dataset': dataset_name
     }
 
 

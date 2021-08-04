@@ -85,31 +85,40 @@ class DomainAdaptationAmazon:
         for location in self.file_location:
             try:
                 source_file = location + self.source_domain + '_train.svmlight'
+                source_file_test = location + self.source_domain + '_test.svmlight'
                 target_file = location + self.target_domain + '_train.svmlight'
-                test_file = location + self.target_domain + '_test.svmlight'
-                xs, ys, xt, yt, xt_test, yt_test = load_svmlight_files([source_file, target_file, test_file])
-                ys, yt, yt_test = (np.array((y + 1) / 2, dtype=int) for y in (ys, yt, yt_test))
-                return xs.A, ys, xt.A, yt, xt_test.A, yt_test  #
+                target_test_file = location + self.target_domain + '_test.svmlight'
+                xs, ys, xs_test, ys_test, xt, yt, xt_test, yt_test = load_svmlight_files([source_file, source_file_test,
+                                                                                          target_file, target_test_file])
+                ys, yt, yt_test, ys_test = (np.array((y + 1) / 2, dtype=int) for y in (ys, yt, yt_test, ys_test))
+                return xs.A, ys, xs_test.A, ys_test, xt.A, yt, xt_test.A, yt_test  #
             except FileNotFoundError:
                 continue
 
     def load_leave_one_out(self):
         target_x_train, target_y_train, target_x_test, target_y_test = self.load_file(self.target_domain)
         src_x_train, src_y_train = [], []
+        src_x_test, src_y_test = [], []
         for domain_name in self.all_domain_names:
             if domain_name != self.target_domain:
-                src_x, src_y, _, _ = self.load_file(domain_name)
+                src_x, src_y, _src_x_test, _src_y_test = self.load_file(domain_name)
                 src_x_train.append(src_x)
                 src_y_train.append(src_y)
+                src_x_test.append(_src_x_test)
+                src_y_test.append(_src_y_test)
 
         # stack src_x_train, src_y_train to get one output.
         src_x_train = np.vstack(src_x_train)
         src_y_train = np.hstack(src_y_train)
-        return src_x_train, src_y_train, target_x_train, target_y_train, target_x_test, target_y_test
+        src_x_test = np.vstack(src_x_test)
+        src_y_test = np.hstack(src_y_test)
+
+
+        return src_x_train, src_y_train, src_x_test, src_y_test, target_x_train, target_y_train, target_x_test, target_y_test
 
 
     def run(self):
-        xs, ys, xt, yt, xt_test, yt_test = self.load_method()
+        xs, ys, xs_test, ys_test, xt, yt, xt_test, yt_test = self.load_method()
         '''
             It can be the case that xs and xt are not same shape i.e not of equal length. 
             Thus to make sure that they are of equal size, we will oversample from xt 
@@ -123,6 +132,9 @@ class DomainAdaptationAmazon:
         # shuffling data
         shuffle_ind = np.random.permutation(len(xs))
         xs, ys, xt, yt = xs[shuffle_ind], ys[shuffle_ind], xt[shuffle_ind], yt[shuffle_ind]
+
+        shuffle_ind = np.random.permutation(len(xs_test))
+        xs_test, ys_test = xs_test[shuffle_ind], ys_test[shuffle_ind]
 
         # split the train data into validation and train
         '''
@@ -141,8 +153,8 @@ class DomainAdaptationAmazon:
         train_src_data = self.process_data(xs, ys, np.zeros_like(ys), vocab=vocab)  # src s=0
         train_target_data = self.process_data(xt, yt, np.ones_like(yt), vocab=vocab)  # target s=1
         test_data = self.process_data(xt_test, yt_test, np.ones_like(yt_test), vocab=vocab)
-        # dummy valid data. A small set of test set so that no time is wasted on validation set.
-        dev_data = self.process_data(xt_test[:512], yt_test[:512], np.ones_like(yt_test[:512]), vocab=vocab)
+        # dummy valid data. We are going to use this validation set to check for leakage.
+        dev_data = self.process_data(xs_test[:len(xt_test)], ys_test[:len(xt_test)], np.zeros_like(yt_test[:512]), vocab=vocab)
 
         train_src_iterator = torch.utils.data.DataLoader(train_src_data,
                                                          self.batch_size,

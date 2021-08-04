@@ -161,7 +161,8 @@ if __name__ == '__main__':
                          use_lr_schedule=use_lr_schedule,
                          fairness_function='demographic_parity',
                          fairness_score_function=fairness_score_function,
-                         sample_specific_class=True
+                         sample_specific_class=True,
+                         calculate_leakage=False
                          )
                     logger.info(f"end of run - {unique_id}")
                 except KeyboardInterrupt:

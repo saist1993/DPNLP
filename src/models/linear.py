@@ -10,6 +10,7 @@ def laplace(epsilon, L1_norm):
     b = L1_norm / epsilon
     return b
 
+
 def initialize_parameters(m):
     if isinstance(m, nn.Embedding):
         nn.init.uniform_(m.weight, -0.05, 0.05)
@@ -41,7 +42,6 @@ def initialize_parameters(m):
             pass
 
 
-
 class GradReverse(Function):
     """
         Torch function used to invert the sign of gradients (to be used for argmax instead of argmin)
@@ -50,6 +50,7 @@ class GradReverse(Function):
 
         Copied from here: https://github.com/geraltofrivia/mytorch/blob/0ce7b23ff5381803698f6ca25bad1783d21afd1f/src/mytorch/utils/goodies.py#L39
     """
+
     @staticmethod
     def forward(ctx, x):
         return x.view_as(x)
@@ -67,6 +68,7 @@ class GradReverse(Function):
 
         Copied from here: https://github.com/geraltofrivia/mytorch/blob/0ce7b23ff5381803698f6ca25bad1783d21afd1f/src/mytorch/utils/goodies.py#L39
     """
+
     @staticmethod
     def forward(ctx, x):
         return x.view_as(x)
@@ -81,25 +83,24 @@ class Linear(nn.Module):
     def __init__(self, model_params):
         super().__init__()
         number_of_layers, input_dim, hidden_dim, output_dim, dropout = \
-            model_params['number_of_layers'], model_params['input_dim'],\
+            model_params['number_of_layers'], model_params['input_dim'], \
             model_params['hidden_dim'], model_params['output_dim'], model_params['dropout']
 
         if type(hidden_dim) == list:
             assert len(hidden_dim) + 1 == number_of_layers
         else:
-            hidden_dim = [hidden_dim for i in range(number_of_layers-1)]
-
+            hidden_dim = [hidden_dim for i in range(number_of_layers - 1)]
 
         '''
             hidden_dims = 1000, 500, 100
-            
+
             Layer1: input_dim - 1000 dim
             Layer2: 1000 dim -  500 dim
             Layer3: 500 dim - 100 dim
             Layer4: 100 dim - output dim
-            
+
             Thus no. of layers == hidden dim + 1
-        
+
         '''
 
         self.fc_layers = []
@@ -107,21 +108,22 @@ class Linear(nn.Module):
 
         for i in range(number_of_layers):
             if i != number_of_layers - 1 and i != 0:
-                self.fc_layers.append((nn.Linear(hidden_dim[i-1], hidden_dim[i])))
+                self.fc_layers.append((nn.Linear(hidden_dim[i - 1], hidden_dim[i])))
             elif i == 0:
                 self.fc_layers.append(nn.Linear(input_dim, hidden_dim[i]))
             else:
-                self.fc_layers.append(nn.Linear(hidden_dim[i-1], output_dim, bias=True)) # @TODO: see if there is a need for a softmax via sigmoid or something
+                self.fc_layers.append(nn.Linear(hidden_dim[i - 1], output_dim,
+                                                bias=True))  # @TODO: see if there is a need for a softmax via sigmoid or something
 
         self.fc_layers = nn.ModuleList(self.fc_layers)
 
         self.noise_layer = False
 
     def forward(self, params):
-        length = None # it is a dummy input only meant for legacy
+        length = None  # it is a dummy input only meant for legacy
         x = params['input']
         for index, layer in enumerate(self.fc_layers):
-            if len(self.fc_layers)-1 != index:
+            if len(self.fc_layers) - 1 != index:
                 x = self.dropout(func.relu(layer(x)))
                 # x = func.relu(layer(x))
             else:
@@ -148,7 +150,6 @@ class LinearAdv(nn.Module):
         self.eps = params['eps']
         self.device = params['device']
 
-
     def forward(self, params):
 
         text, gradient_reversal = \
@@ -158,7 +159,7 @@ class LinearAdv(nn.Module):
 
         if self.noise_layer:
             m = torch.distributions.laplace.Laplace(torch.tensor([0.0]), torch.tensor([laplace(self.eps, 2)]))
-            hidden = original_hidden/torch.norm(original_hidden, keepdim=True, dim=1)
+            hidden = original_hidden / torch.norm(original_hidden, keepdim=True, dim=1)
             hidden = hidden + m.sample(hidden.shape).squeeze().to(self.device)
         else:
             hidden = original_hidden
@@ -167,7 +168,6 @@ class LinearAdv(nn.Module):
         # classifier setup
         _params['input'] = hidden
         prediction = self.classifier(_params)
-
 
         # adversarial setup
         if gradient_reversal:
@@ -182,7 +182,8 @@ class LinearAdv(nn.Module):
 
         output = {
             'prediction': prediction,
-            'adv_output': adv_output
+            'adv_output': adv_output,
+            'hidden': hidden
         }
 
         return output
@@ -190,6 +191,7 @@ class LinearAdv(nn.Module):
     @property
     def layers(self):
         return torch.nn.ModuleList([self.encoder, self.classifier, self.adv])
+
 
 if __name__ == '__main__':
     #

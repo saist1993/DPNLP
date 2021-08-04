@@ -32,6 +32,9 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
     epoch_acc_main = []
     epoch_total_loss = []
 
+    all_hidden = []
+    all_s = []
+
 
     if is_adv:
         loss_aux_scale = other_params['loss_aux_scale']
@@ -69,6 +72,9 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
             loss_aux = torch.tensor(0.0)
             acc_aux = torch.tensor(0.0)
 
+        all_hidden.append(output['hidden'].detach().cpu().numpy())
+        all_s.append(items['aux'])
+
         total_loss.backward()
         optimizer.step()
 
@@ -86,14 +92,19 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         'epoch_acc_aux': np.mean(epoch_acc_aux)
     }
 
-    return return_output
+    other_data = {
+        'all_hidden' : np.row_stack(all_hidden),
+        'all_s' : torch.cat(all_s, out=torch.Tensor(len(all_s), all_s[0].shape[0])).to(device)
+    }
+
+    return return_output, other_data
 
 def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation_function, other_params):
     # works same as train loop with few exceptions. It does have code repetation
     model.eval()
 
-    all_preds = []
-    y,s = [], []
+    all_preds, all_hidden = [], []
+    y,all_s = [], []
 
     # tracking stuff
     epoch_loss_main = []
@@ -101,6 +112,8 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
     epoch_acc_aux = []
     epoch_acc_main = []
     epoch_total_loss = []
+
+
 
     is_gradient_reversal = other_params['gradient_reversal']
     is_adv = other_params['is_adv'] # adv
@@ -133,10 +146,11 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
                     loss_aux = criterion(output['adv_output'], items['aux'])
 
             all_preds.append(output['prediction'].argmax(1))
+            all_hidden.append(output['hidden'].detach().cpu().numpy())
             y.append(items['labels'])
 
             if "aux" in items.keys():
-                s.append(items['aux'])
+                all_s.append(items['aux'])
 
             acc_main = accuracy_calculation_function(output['prediction'], items['labels'])
             if is_adv:
@@ -157,8 +171,24 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
         # fairness stuff !!
         all_preds = torch.cat(all_preds, out=torch.Tensor(len(all_preds), all_preds[0].shape[0])).to(device)
         y = torch.cat(y, out=torch.Tensor(len(y), y[0].shape[0])).to(device)
-        s = torch.cat(s, out=torch.Tensor(len(s), s[0].shape[0])).to(device)
-        grms, group_fairness = calculate_fairness_stuff(all_preds, y, s, other_params['fairness_score_function'], device)
+        all_s = torch.cat(all_s, out=torch.Tensor(len(all_s), all_s[0].shape[0])).to(device)
+        # all_hidden = torch.cat(all_hidden, out=torch.Tensor(len(all_hidden), all_hidden[0].shape[0]))
+        all_hidden = np.row_stack(all_hidden)
+        grms, group_fairness = calculate_fairness_stuff(all_preds, y, all_s, other_params['fairness_score_function'], device)
+
+        # if other_params['calculate_leakage']:
+        #     # for now 70% of test is train and remaining is for test.
+        #     all_hidden = all_hidden.detach().cpu().numpy()
+        #     all_s = all_s.detach().cpu().numpy()
+        #     k = 0.70
+        #     train_preds = all_hidden[:int(len(y)*k)]
+        #     test_preds = all_hidden[int(len(y)*k):]
+        #     train_labels = all_s[:int(len(all_s)*k)]
+        #     test_labels = all_s[int(len(all_s)*k):]
+        #
+        #     leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='svm')
+        # else:
+        #     leakage = 0.0
 
         return_output = {
             'epoch_total_loss': np.mean(epoch_total_loss),
@@ -167,10 +197,17 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
             'epoch_loss_aux': np.mean(epoch_loss_aux),
             'epoch_acc_aux': np.mean(epoch_acc_aux),
             'grms': grms,
-            'group_fairness': group_fairness
+            'group_fairness': group_fairness,
         }
 
-        return return_output
+        other_data = {
+            'all_hidden': all_hidden,
+            'all_s': all_s
+        }
+
+
+        return return_output, other_data
+
 
 
 def training_loop( n_epochs:int,
@@ -209,6 +246,8 @@ def training_loop( n_epochs:int,
     save_wrt_loss = other_params['save_wrt_loss']
     total_epochs = n_epochs # this needs to be thought in more depth
 
+    dataset = other_params["dataset"]
+
     if other_params['is_adv']:
         other_params['gradient_reversal'] = True
 
@@ -233,16 +272,37 @@ def training_loop( n_epochs:int,
         start_time = time.monotonic()
         logging.info("start of block - simple loop")
         logger.info(f"current adv scale is {current_adv_scale}")
-        train_output = train(model, iterator['train_iterator'], optimizer, criterion, device,
+        train_output, train_other_data = train(model, iterator['train_iterator'], optimizer, criterion, device,
                                           accuracy_calculation_function, other_params)
 
         # model.eps = 1000
 
 
-        val_output = evaluate(model, iterator['valid_iterator'], optimizer, criterion, device,
+        val_output, val_other_data = evaluate(model, iterator['valid_iterator'], optimizer, criterion, device,
                              accuracy_calculation_function, other_params)
-        test_output = evaluate(model, iterator['test_iterator'], optimizer, criterion, device,
+        test_output, test_other_data = evaluate(model, iterator['test_iterator'], optimizer, criterion, device,
                              accuracy_calculation_function, other_params)
+
+        # now here we need to create a train and test set. all_hidden, all_s
+
+        if "amazon" in dataset:
+            train_preds = np.vstack([val_other_data['all_hidden'][:int(0.60*len(val_other_data['all_hidden']))],
+                                     test_other_data['all_hidden'][:int(0.60*len(test_other_data['all_hidden']))]])
+
+            test_preds = np.vstack([val_other_data['all_hidden'][int(0.60 * len(val_other_data['all_hidden'])):],
+                                     test_other_data['all_hidden'][int(0.60 * len(test_other_data['all_hidden'])):]])
+
+
+            train_labels = np.hstack([val_other_data['all_s'][:int(0.60*len(val_other_data['all_s']))],
+                                     test_other_data['all_s'][:int(0.60*len(test_other_data['all_s']))]])
+
+            test_labels = np.hstack([val_other_data['all_s'][int(0.60 * len(val_other_data['all_s'])):],
+                                     test_other_data['all_s'][int(0.60 * len(test_other_data['all_s'])):]])
+
+            leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='svm')
+            print(f'\t Leakage is {leakage}')
+
+
 
         # model.eps = other_params['eps']
 
@@ -281,6 +341,7 @@ def training_loop( n_epochs:int,
         print(f'\tTrain Loss: {train_output["epoch_total_loss"]:.3f} | Train Acc: {train_output["epoch_acc_main"]}%')
         print(f'\t Val. Loss: {val_output["epoch_total_loss"]:.3f} |  Val. Acc: {val_output["epoch_acc_main"]}%')
         print(f'\t Test Loss: {test_output["epoch_total_loss"]:.3f} |  Val. Acc: {test_output["epoch_acc_main"]}%')
+
 
         if wandb:
             wandb.log({'train_' + key:value for key, value in train_output.items()})
