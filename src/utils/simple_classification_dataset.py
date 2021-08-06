@@ -7,7 +7,7 @@ import numpy as np
 from pathlib import Path
 
 
-folder_location = '../../datasets'
+folder_location = '../datasets'
 
 
 
@@ -337,7 +337,7 @@ def get_adult_multigroups_data_sensr(load_data_size=None):
 
     s_concat, s = np.unique(np.hstack((s_gender.reshape(-1, 1), s_race.reshape(-1, 1))), return_inverse=True, axis=0)
 
-    return X, y, s
+    return X, y, s, s_concat
 
 
 

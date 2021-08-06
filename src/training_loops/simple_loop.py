@@ -174,21 +174,14 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
         all_s = torch.cat(all_s, out=torch.Tensor(len(all_s), all_s[0].shape[0])).to(device)
         # all_hidden = torch.cat(all_hidden, out=torch.Tensor(len(all_hidden), all_hidden[0].shape[0]))
         all_hidden = np.row_stack(all_hidden)
-        grms, group_fairness = calculate_fairness_stuff(all_preds, y, all_s, other_params['fairness_score_function'], device)
+        extra_info = {}
+        if "adult_multigroup_sensr" in other_params['dataset_metadata']['dataset_name']:
+            # a hack for passing more info specifically for adult multigroup sensr
+            extra_info['s_concat'] = other_params['dataset_metadata']['s_concat']
+        grms, group_fairness = calculate_fairness_stuff(all_preds,y, all_s, other_params['fairness_score_function'],
+                                                        device, extra_info) # update this after everything we need is available here.
 
-        # if other_params['calculate_leakage']:
-        #     # for now 70% of test is train and remaining is for test.
-        #     all_hidden = all_hidden.detach().cpu().numpy()
-        #     all_s = all_s.detach().cpu().numpy()
-        #     k = 0.70
-        #     train_preds = all_hidden[:int(len(y)*k)]
-        #     test_preds = all_hidden[int(len(y)*k):]
-        #     train_labels = all_s[:int(len(all_s)*k)]
-        #     test_labels = all_s[int(len(all_s)*k):]
-        #
-        #     leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='svm')
-        # else:
-        #     leakage = 0.0
+
 
         return_output = {
             'epoch_total_loss': np.mean(epoch_total_loss),
@@ -250,6 +243,8 @@ def training_loop( n_epochs:int,
 
     if other_params['is_adv']:
         other_params['gradient_reversal'] = True
+    else:
+        other_params['gradient_reversal'] = False
 
     # update adv loss with every epoch
     def get_current_adv_scale(epoch_number, last_scale):
@@ -284,6 +279,8 @@ def training_loop( n_epochs:int,
                              accuracy_calculation_function, other_params)
 
         # now here we need to create a train and test set. all_hidden, all_s
+
+        print(test_output['group_fairness'])
 
         if "amazon" in dataset:
             train_preds = np.vstack([val_other_data['all_hidden'][:int(0.60*len(val_other_data['all_hidden']))],

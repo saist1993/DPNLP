@@ -391,7 +391,61 @@ def get_true_positive_rate(y_predicted, y_true):
     tn, fp, fn, tp = confusion_matrix(y_true, y_predicted).ravel()
     tpr = tp / (tp+fn)
     return tpr
+    # return torch.mean((y_predicted == y_true).float())
 
+def get_true_negative_rate(y_predicted, y_true):
+    """Compute the true positive rate for given predictions of the class label.
+    Parameters
+    ----------
+    y_predicted: numpy array
+        The predicted class labels of shape=(number_points,).
+    y_true: numpy array
+        The true class labels of shape=(number_points,).
+    Returns
+    ---------
+    tpr: float
+        The true positive rate.
+    """
+    tn, fp, fn, tp = confusion_matrix(y_true, y_predicted).ravel()
+    tnr = tn / (tn+fp)
+    return tnr
+    # return torch.mean((y_predicted == y_true).float())
+
+def get_false_negative_rate(y_predicted, y_true):
+    """Compute the true positive rate for given predictions of the class label.
+    Parameters
+    ----------
+    y_predicted: numpy array
+        The predicted class labels of shape=(number_points,).
+    y_true: numpy array
+        The true class labels of shape=(number_points,).
+    Returns
+    ---------
+    tpr: float
+        The true positive rate.
+    """
+    tn, fp, fn, tp = confusion_matrix(y_true, y_predicted).ravel()
+    fnr = fn / (fn+tp)
+    return fnr
+    # return torch.mean((y_predicted == y_true).float())
+
+def get_false_positive_rate(y_predicted, y_true):
+    """Compute the true positive rate for given predictions of the class label.
+    Parameters
+    ----------
+    y_predicted: numpy array
+        The predicted class labels of shape=(number_points,).
+    y_true: numpy array
+        The true class labels of shape=(number_points,).
+    Returns
+    ---------
+    tpr: float
+        The true positive rate.
+    """
+    tn, fp, fn, tp = confusion_matrix(y_true, y_predicted).ravel()
+    fpr = fp / (fp+tn)
+    return fpr
+    # return torch.mean((y_predicted == y_true).float())
 
 def calculate_multiple_things(preds, y, s, other_params):
     """
@@ -434,6 +488,159 @@ def calculate_dummy_fairness(preds, y, s, other_params):
     """does not calculate fairness. Just returns a dummy value. Useful in case where fairness need not be calculated."""
     return [0.0], {}
 
+
+def calculate_fairness_adult_sensr_org(preds, y, s, other_params):
+    """
+    This is a very specifc fairness function which to be used just in the context of
+    adult multi group sensr.
+    :param preds:
+    :param y:
+    :param s:
+    :param other_params:
+    :return:
+    """
+    # hardcoding it for now -> automate this at some point of time in the future.
+    gender_zero = [0,1]
+    gender_one = [2,3]
+    race_zero = [0,2]
+    race_one = [1,3]
+
+    gender_zero_index = np.logical_or(s==gender_zero[0] , s==gender_zero[1])
+    gender_one_index = np.logical_or(s==gender_one[0] , s==gender_one[1])
+    race_zero_index = np.logical_or(s==race_zero[0] , s==race_zero[1])
+    race_one_index = np.logical_or(s==race_one[0] , s==race_one[1])
+
+    y_zero_index = y==0
+    y_one_index = y==1
+
+    tpr_gender_zero_zero = get_true_positive_rate(preds[np.logical_and(gender_zero_index, y_zero_index)], y[np.logical_and(gender_zero_index, y_zero_index)])
+    # tpr_gender_zero = get_true_positive_rate(preds[gender_zero_index], y[gender_zero_index])
+    # tpr_gender_one = get_true_positive_rate(preds[gender_one_index], y[gender_one_index])
+    grms_gender = 1
+    
+    tpr_gender_zero_zero = get_true_negative_rate(preds[np.logical_and(gender_zero_index, y_zero_index)], y[np.logical_and(gender_zero_index, y_zero_index)]) # zero on gender and zero on y
+    tpr_gender_one_zero = get_true_negative_rate(preds[np.logical_and(gender_one_index, y_zero_index)], y[np.logical_and(gender_one_index, y_zero_index)]) # one on gender and zero on y
+    
+    tpr_gender_zero_one = get_true_positive_rate(preds[np.logical_and(gender_zero_index, y_one_index)], y[np.logical_and(gender_zero_index, y_one_index)]) # zero on gender and zero on y
+    tpr_gender_one_one = get_true_positive_rate(preds[np.logical_and(gender_one_index, y_one_index)], y[np.logical_and(gender_one_index, y_one_index)]) # one on gender and zero on y
+
+    tpr_race_zero_zero = get_true_negative_rate(preds[np.logical_and(race_zero_index, y_zero_index)], y[
+        np.logical_and(race_zero_index, y_zero_index)])  # zero on gender and zero on y
+    tpr_race_one_zero = get_true_negative_rate(preds[np.logical_and(race_one_index, y_zero_index)], y[
+        np.logical_and(race_one_index, y_zero_index)])  # one on gender and zero on y
+
+    tpr_race_zero_one = get_true_positive_rate(preds[np.logical_and(race_zero_index, y_one_index)], y[
+        np.logical_and(race_zero_index, y_one_index)])  # zero on gender and zero on y
+    tpr_race_one_one = get_true_positive_rate(preds[np.logical_and(race_one_index, y_one_index)], y[
+        np.logical_and(race_one_index, y_one_index)])  # one on gender and zero on y
+
+    gap_gender_zero = abs(tpr_gender_zero_zero - tpr_gender_one_zero)
+    gap_gender_one = abs(tpr_gender_zero_one - tpr_gender_one_one)
+    gender_rms = math.sqrt(((gap_gender_zero**2 + gap_gender_one**2)/2.0))
+
+
+    gap_race_zero = abs(tpr_race_zero_zero - tpr_race_one_zero)
+    gap_race_one = abs(tpr_race_zero_one - tpr_race_one_one)
+    race_rms = math.sqrt(((gap_race_zero**2 + gap_race_one**2)/2.0))
+
+    fairness = {
+        'gender_rms': gender_rms,
+        'race_rms': race_rms,
+        'max_gap_gender': max(gap_gender_one, gap_gender_zero),
+        'max_gap_race': max(gap_race_one,gap_race_zero)
+    }
+
+    return gender_rms, fairness
+
+
+def calculate_fairness_adult_sensr(preds, y, s, other_params):
+    """
+    This is a very specifc fairness function which to be used just in the context of
+    adult multi group sensr.
+    :param preds:
+    :param y:
+    :param s:
+    :param other_params:
+    :return:
+    """
+    # hardcoding it for now -> automate this at some point of time in the future.
+    gender_zero = [0, 1]
+    gender_one = [2, 3]
+    race_zero = [0, 2]
+    race_one = [1, 3]
+    favourable_label = 1.0
+    unfavourable_label = 0.0
+
+    preds = preds.detach().cpu().numpy()
+    s = s.detach().cpu().numpy()
+    y = y.detach().cpu().numpy()
+    y = y.ravel()
+    preds = preds.ravel()
+
+    y_true_pos = (y == favourable_label)  # True for all instances with y=1
+    y_true_neg = (y == unfavourable_label)  # True for all instances with y=0
+
+    def temp(cond_vector):
+        # all instances with r=1 (favourable condition) and pred=1
+        y_pred_pos = np.logical_and(preds == favourable_label, cond_vector)
+
+        # all instances with r=1 (favourable condition) and pred=0
+        y_pred_neg = np.logical_and(preds == unfavourable_label, cond_vector)
+
+        return dict(
+            TP = np.sum(np.logical_and(y_true_pos, y_pred_pos), dtype=np.float64),
+            FP = np.sum(np.logical_and(y_true_neg, y_pred_pos), dtype=np.float64),
+            TN = np.sum(np.logical_and(y_true_neg, y_pred_neg), dtype=np.float64),
+            FN = np.sum(np.logical_and(y_true_pos, y_pred_neg), dtype=np.float64),
+            positive = np.sum(np.logical_and(y_true_pos, cond_vector), dtype=np.float64),
+            negative =np.sum(np.logical_and(y_true_neg, cond_vector), dtype=np.float64)
+        )
+    # gender
+    # find all gender 1
+    cond_vec = np.logical_or(s==gender_one[0] , s==gender_one[1])
+    gender_1_rates = temp(cond_vec)
+
+    # find all gender 0
+    cond_vec = np.logical_or(s==gender_zero[0] , s==gender_zero[1])
+    gender_0_rates = temp(cond_vec)
+
+
+    gap_gender_positive = abs((gender_0_rates['FP']/gender_0_rates['negative']) - \
+                          (gender_1_rates['FP']/gender_1_rates['negative']))
+
+    gap_gender_negative = abs((gender_0_rates['FN'] / gender_0_rates['positive']) - (
+                            gender_1_rates['FN'] / gender_1_rates['positive']))
+
+    gender_rms = math.sqrt(((gap_gender_positive**2 + gap_gender_negative**2)/2.0))
+
+
+    ### now for race. Same stuff
+
+    cond_vec = np.logical_or(s == race_one[0], s == race_one[1])
+    race_1_rates = temp(cond_vec)
+
+    # find all gender 0
+    cond_vec = np.logical_or(s == race_zero[0], s == race_zero[1])
+    race_0_rates = temp(cond_vec)
+
+    gap_race_positive = abs((race_0_rates['FP'] / race_0_rates['negative']) - \
+                              (race_1_rates['FP'] / race_1_rates['negative']))
+
+    gap_race_negative = abs((race_0_rates['FN'] / race_0_rates['positive']) - (
+            race_1_rates['FN'] / race_1_rates['positive']))
+
+    race_rms = math.sqrt(((gap_race_positive ** 2 + gap_race_negative ** 2) / 2.0))
+
+
+    fairness = {
+        'gender_rms': gender_rms,
+        'race_rms': race_rms,
+        'max_gap_gender': max(gap_gender_positive, gap_gender_negative),
+        'max_gap_race': max(gap_race_positive, gap_race_negative)
+    }
+
+    return gender_rms, fairness
+
 def get_fairness_function(fairness_function):
     if fairness_function.lower() == 'equal_odds':
         fairness_function = equal_odds
@@ -468,6 +675,8 @@ def get_fairness_score_function(fairness_score_function):
         fairness_score_function = calculate_multiple_things_blog
     elif fairness_score_function.lower() == 'dummy_fairness':
         fairness_score_function = calculate_dummy_fairness
+    elif fairness_score_function.lower() == 'fairness_adult_sensr':
+        fairness_score_function = calculate_fairness_adult_sensr
     else:
         print("following type are supported: grms, equal_odds, demographic_parity, equal_opportunity")
         raise NotImplementedError

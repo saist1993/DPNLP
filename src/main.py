@@ -105,6 +105,9 @@ def main(emb_dim:int,
     if "amazon" in dataset_name:
         logger.info(f"model chossen amazon model")
         model_arch_params = config.amazon_model
+    elif "adult_multigroup_sensr" in dataset_name:
+        logger.info(f"model chossen amazon model")
+        model_arch_params = config.simple_classification_dataset_model # don't need this expressive model. Simplify it!
 
     # setting up seeds for reproducibility
     torch.manual_seed(seed)
@@ -158,6 +161,7 @@ def main(emb_dim:int,
 
 
     output_dim = number_of_labels
+    adv_output_dim = 4 # set this up automatically
     if len(vocab) > 10: # it is text and not just feature vector
         input_dim = len(vocab)
     else:
@@ -177,7 +181,7 @@ def main(emb_dim:int,
         model_arch = model_arch_params
         model_arch['encoder']['input_dim'] = input_dim
         model_arch['main_task_classifier']['output_dim'] = output_dim
-        model_arch['adv']['output_dim'] = output_dim
+        model_arch['adv']['output_dim'] = adv_output_dim
         model_params = {
             'model_arch': model_arch,
             'noise_layer': noise_layer,
@@ -263,6 +267,7 @@ def main(emb_dim:int,
         'fairness_function': fairness_function,
         'fairness_score_function': fairness_score_function,
         'task': other_data_metadata['task'],
+        'dataset_metadata': other_data_metadata,
         'save_wrt_loss': save_wrt_loss,
         'noise_layer': noise_layer,
         'calculate_leakage': calculate_leakage,

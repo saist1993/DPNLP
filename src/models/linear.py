@@ -193,6 +193,8 @@ class LinearAdv(nn.Module):
         return torch.nn.ModuleList([self.encoder, self.classifier, self.adv])
 
 
+
+
 if __name__ == '__main__':
     #
     # model_params = {
