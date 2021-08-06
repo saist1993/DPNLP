@@ -1,4 +1,5 @@
 # All data reading manipulation for a dataset takes place here.
+import copy
 import torch
 import numpy as np
 from sklearn.datasets import load_svmlight_files
@@ -290,12 +291,209 @@ class MultiGroupSenSR:
         }
         iterators.append(iterator_set)
 
+
+        # make multiple copies of the dataset for gender race consistence
+        '''
+            Essentially: gender - [0,1]
+                       : race   - [0,1]
+                       
+                       Create 4 copies of the dataset such that combination of race and gender are present 
+                       
+                       Copy1 - gender=0, race=0
+                       Copy2 - gender=0, race=1
+                       Copy3 - gender=1, race=0
+                       Copy4 - gender=1, race=1
+                       
+                       Now see how many times is the prediction in all the copies is same.
+                       Note that ground truth does not matter in this case
+                       
+                       gender_index = 39
+                       race_index = 40
+        '''
+
+        gender_index = 39
+        race_index = 40
+
+        # copy 1 gender = 0, race = 0
+        test_X[:, gender_index] = 0.0
+        test_X[:, race_index] = 0.0
+        X_copy1 = copy.deepcopy(test_X)
+
+        # copy 2 gender = 0, race = 1
+        test_X[:, gender_index] = 0.0
+        test_X[:, race_index] = 1.0
+        X_copy2 = copy.deepcopy(test_X)
+
+        # copy 3 gender = 1, race = 0
+        test_X[:, gender_index] = 1.0
+        test_X[:, race_index] = 0.0
+        X_copy3 = copy.deepcopy(test_X)
+
+        # copy 4 gender = 1, race = 0
+        test_X[:, gender_index] = 1.0
+        test_X[:, race_index] = 1.0
+        X_copy4 = copy.deepcopy(test_X)
+
+        test_copy1 = self.process_data(X_copy1, test_y, test_s, vocab=vocab)
+        test_copy2 = self.process_data(X_copy2, test_y, test_s, vocab=vocab)
+        test_copy3 = self.process_data(X_copy3, test_y, test_s, vocab=vocab)
+        test_copy4 = self.process_data(X_copy4, test_y, test_s, vocab=vocab)
+
+        test_copy1_iterator = torch.utils.data.DataLoader(test_copy1,
+                                                    512,
+                                                    shuffle=False,
+                                                    collate_fn=self.collate
+                                                    )
+
+        test_copy2_iterator = torch.utils.data.DataLoader(test_copy2,
+                                                          512,
+                                                          shuffle=False,
+                                                          collate_fn=self.collate
+                                                          )
+
+        test_copy3_iterator = torch.utils.data.DataLoader(test_copy3,
+                                                          512,
+                                                          shuffle=False,
+                                                          collate_fn=self.collate
+                                                          )
+
+        test_copy4_iterator = torch.utils.data.DataLoader(test_copy4,
+                                                          512,
+                                                          shuffle=False,
+                                                          collate_fn=self.collate
+                                                          )
+
+
+
+
         other_meta_data = {}
         other_meta_data['task'] = 'multi_aux_classification'
         other_meta_data['s_concat'] = self.s_concat
         other_meta_data['dataset_name'] = self.dataset_name
+        other_meta_data['gender_race_consistent'] = [test_copy1_iterator, test_copy2_iterator,
+                                                     test_copy3_iterator, test_copy4_iterator]
 
         return vocab, number_of_labels, number_of_labels, iterators, other_meta_data  # empty dict for other_meta_data
+
+
+
+
+class SimpleAdvDatasetReader():
+    def __init__(self, dataset_name:str,**params):
+        self.dataset_name = dataset_name.lower()
+        self.batch_size = params['batch_size']
+        self.train_split = .80
+
+        if 'celeb' in self.dataset_name:
+            self.X, self.y, self.s = get_celeb_data()
+        elif 'adult' in self.dataset_name and 'multigroup' not in self.dataset_name:
+            self.X, self.y, self.s = get_adult_data()
+        elif 'crime' in self.dataset_name:
+            self.X, self.y, self.s = get_crimeCommunities_data()
+        elif 'dutch' in self.dataset_name:
+            self.X, self.y, self.s = get_dutch_data()
+        elif 'compas' in self.dataset_name:
+            self.X, self.y, self.s = get_compas_data()
+        elif 'german' in self.dataset_name:
+            self.X, self.y, self.s = get_german_data()
+        elif 'adult' in self.dataset_name and 'multigroup' in self.dataset_name:
+            self.X, self.y, self.s = get_celeb_multigroups_data()
+        elif 'gaussian' in self.dataset_name:
+            raise NotImplementedError
+            # self.X, self.y, self.s = drh.get_gaussian_data(50000)
+        else:
+            raise NotImplementedError
+
+        # converting all -1,1 -> 0,1
+        self.y = (self.y+1)/2
+
+        if len(np.unique(self.s)) == 2 and -1 in np.unique(self.s):
+            self.s = (self.s + 1) / 2
+
+
+    def process_data(self, X,y,s, vocab):
+        """raw data is assumed to be tokenized"""
+        final_data = [(a,b,c) for a,b,c in zip(y,X,s)]
+
+
+        label_transform = sequential_transforms()
+        input_transform = sequential_transforms()
+        aux_transform = sequential_transforms()
+
+        transforms = (label_transform, input_transform, aux_transform)
+
+        return TextClassificationDataset(final_data, vocab, transforms)
+
+
+    def collate(self, batch):
+        labels, input, aux = zip(*batch)
+
+        labels = torch.LongTensor(labels)
+        aux = torch.LongTensor(aux)
+        lengths = torch.LongTensor([len(x) for x in input])
+        input = torch.FloatTensor(input)
+
+        input_data = {
+            'labels': labels,
+            'input': input,
+            'lengths': lengths,
+            'aux': aux
+        }
+
+        return input_data
+
+
+    def run(self):
+        dataset_size = self.X.shape[0] # examples*feature_size
+        test_index = int(self.train_split*dataset_size)
+        dev_index = int(self.train_split*dataset_size) - int(self.train_split*dataset_size*.10)
+
+        number_of_labels = len(np.unique(self.y))
+
+        train_X, train_y, train_s = self.X[:dev_index,:], self.y[:dev_index], self.s[:dev_index]
+        dev_X, dev_y, dev_s = self.X[dev_index:test_index, :], self.y[dev_index:test_index], self.s[dev_index:test_index]
+        test_X, test_y, test_s = self.X[test_index:, :], self.y[test_index:], self.s[test_index:]
+
+        vocab = {'<pad>':1} # no need of vocab in these dataset. It is there for code compatibility purposes.
+
+        train_data = self.process_data(train_X,train_y,train_s, vocab=vocab)
+        dev_data = self.process_data(dev_X,dev_y,dev_s, vocab=vocab)
+        test_data = self.process_data(test_X,test_y,test_s, vocab=vocab)
+
+        train_iterator = torch.utils.data.DataLoader(train_data,
+                                                     self.batch_size,
+                                                     shuffle=False,
+                                                     collate_fn=self.collate
+                                                     )
+
+        dev_iterator = torch.utils.data.DataLoader(dev_data,
+                                                   512,
+                                                   shuffle=False,
+                                                   collate_fn=self.collate
+                                                   )
+
+        test_iterator = torch.utils.data.DataLoader(test_data,
+                                                    512,
+                                                    shuffle=False,
+                                                    collate_fn=self.collate
+                                                    )
+
+        iterators = []  # If it was k-fold. One could append k iterators here.
+        iterator_set = {
+            'train_iterator': train_iterator,
+            'valid_iterator': dev_iterator,
+            'test_iterator': test_iterator
+        }
+        iterators.append(iterator_set)
+
+        other_meta_data = {}
+        other_meta_data['task'] = 'simple_classification'
+        other_meta_data['dataset_name'] = self.dataset_name
+
+
+        return vocab, number_of_labels, number_of_labels, iterators, other_meta_data
+
+
 
 def generate_data_iterators(dataset_name:str, **kwargs):
 
@@ -305,6 +503,9 @@ def generate_data_iterators(dataset_name:str, **kwargs):
         vocab, number_of_labels, number_of_aux_labels, iterators, other_meta_data = dataset_creator.run()
     elif "adult_multigroup_sensr" in dataset_name:
         dataset_creator = MultiGroupSenSR(dataset_name=dataset_name, **kwargs)
+        vocab, number_of_labels, number_of_aux_labels, iterators, other_meta_data = dataset_creator.run()
+    elif dataset_name.lower() in "_".join(['celeb', 'crime', 'dutch', 'compas', 'german', 'adult', 'gaussian','adult', 'multigroups']):
+        dataset_creator = SimpleAdvDatasetReader(dataset_name=dataset_name, **kwargs)
         vocab, number_of_labels, number_of_aux_labels, iterators, other_meta_data = dataset_creator.run()
     else:
         raise CustomError("No such dataset")

@@ -195,7 +195,8 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
 
         other_data = {
             'all_hidden': all_hidden,
-            'all_s': all_s
+            'all_s': all_s,
+            'all_preds': all_preds
         }
 
 
@@ -299,7 +300,22 @@ def training_loop( n_epochs:int,
             leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='svm')
             print(f'\t Leakage is {leakage}')
 
+        if "adult_multigroup_sensr" in dataset:
+            # now this is a test iterator used for checking the consistency of preditction. Thus
+            # saving the prediction is at most important
+            save_consistency_preds = []
+            for gr_iterator in other_params['dataset_metadata']['gender_race_consistent']:
+                cons_output, cons_other_data = evaluate(model, gr_iterator, optimizer, criterion, device,
+                                                      accuracy_calculation_function, other_params)
+                save_consistency_preds.append(cons_other_data['all_preds'])
 
+            _temp = torch.logical_not(torch.logical_xor(save_consistency_preds[1], save_consistency_preds[0]))
+            _temp = torch.logical_not(torch.logical_xor(save_consistency_preds[2], _temp))
+            _temp = torch.logical_not(torch.logical_xor(save_consistency_preds[3], _temp))
+
+            # cons_acc = torch.logical_and(save_consistency_preds[0], torch.logical_and(save_consistency_preds[1], torch.logical_and(save_consistency_preds[2], save_consistency_preds[3])))
+            cons_acc = torch.sum(_temp)*1.0/save_consistency_preds[0].shape[0]
+            print(cons_acc)
 
         # model.eps = other_params['eps']
 
