@@ -86,6 +86,11 @@ if __name__ == '__main__':
     fairness_functions = ['demographic_parity', 'equal_opportunity']
     fairness_iterators = ['train', 'custom_1']
 
+    fairness_clippings = [True]
+    fairness_normalizations = [True]
+    fairness_functions = ['demographic_parity', 'equal_opportunity']
+    fairness_iterators = ['custom_1']
+
     for optimizer, lr in lrs:
         for fair_clip in fairness_clippings:
             for fair_norm in fairness_normalizations:
