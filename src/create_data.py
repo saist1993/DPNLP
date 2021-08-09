@@ -648,7 +648,7 @@ class EncodedEmoji:
         self.batch_size = params['batch_size']
         self.dataset_name = dataset_name
         self.n = 100000 # https://github.com/HanXudong/Diverse_Adversaries_for_Mitigating_Bias_in_Training/blob/b5b4c99ada17b3c19ab2ae8789bb56058cb72643/scripts_deepmoji.py#L270
-        self.folder_location = '../data/deepmoji'
+        self.folder_location = '../datasets/deepmoji'
         try:
             self.ratio = params['ratio_of_pos_neg']
         except:
