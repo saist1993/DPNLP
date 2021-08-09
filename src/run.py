@@ -54,6 +54,8 @@ from typing import Optional
 @click.option('-fairness_score_function', '--fairness_score_function', type=str, default='grms', help="The fairness score function.")
 @click.option('-sample_specific_class', '--sample_specific_class', type=bool, default=False, help="samples only specific classes. Specified in create_data.BiasinBiosSimpleAdv class")
 @click.option('-calculate_leakage', '--calculate_leakage', type=bool, default=False, help="leakage from the test set.")
+@click.option('-clip_fairness', '--clip_fairness', type=bool, default=True, help="Clip fairness to max of 1.0")
+@click.option('-normalize_fairness', '--normalize_fairness', type=bool, default=False, help="normalizes fairness before multiplying with gradients.")
 def run(emb_dim:int,
          spacy_model:str,
          seed:int,
@@ -104,7 +106,9 @@ def run(emb_dim:int,
          fairness_function:str,
          fairness_score_function:str,
          sample_specific_class:bool,
-         calculate_leakage:bool
+         calculate_leakage:bool,
+         clip_fairness:bool,
+         normalize_fairness:bool
          ):
     main.main(emb_dim,
              spacy_model,
@@ -156,7 +160,9 @@ def run(emb_dim:int,
              fairness_function,
              fairness_score_function,
              sample_specific_class,
-             calculate_leakage
+             calculate_leakage,
+             clip_fairness,
+             normalize_fairness
              )
 
 if __name__ == '__main__':

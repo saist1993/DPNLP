@@ -62,7 +62,6 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
     total_no_aux_classes, total_no_main_classes = len(torch.unique(fairness_all_aux)), len(torch.unique(fairness_all_labels))
     fairness_all_preds = generate_predictions(model, fairness_iterator, device) # think of this as model.fit. Iterates over the iterator and returns model prediction.
 
-    # Check the shapes of fairness_all_aux, fairness_all_labels, fairness_all_preds.
 
     if not fairness_lookup.any():
         group_fairness, fairness_lookup = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
@@ -114,7 +113,12 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
         fairness = fairness_lookup[items['labels'], items['aux']]
 
-        total_loss = torch.mean(total_loss * (1 - fairness.to(device)))
+        if other_params['normalize_fairness']:
+            normalization = torch.mean(1.0-fairness)
+        else:
+            normalization = torch.tensor(1.0)
+
+        total_loss = torch.mean(total_loss * (1 - fairness.to(device)/normalization.to(device)))
         total_loss.backward()
         optimizer.step()
 
@@ -126,8 +130,10 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
                                                             total_no_aux_classes=total_no_aux_classes,
                                                             epsilon=0.0)
 
-        # @TODO: Add normalization.
+        # Clipping
         fairness_lookup = fairness_lookup + interm_fairness_lookup
+        if other_params['clip_fairness']:
+            fairness_lookup = torch.clip(fairness_lookup, None, 1.0)
 
 
 

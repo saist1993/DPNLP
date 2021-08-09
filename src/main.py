@@ -76,7 +76,9 @@ def main(emb_dim:int,
          fairness_function:str,
          fairness_score_function:str,
          sample_specific_class:bool,
-         calculate_leakage:bool
+         calculate_leakage:bool,
+         clip_fairness:bool,
+         normalize_fairness:bool
          ):
     '''
         A place keep all the design choices.
@@ -275,7 +277,9 @@ def main(emb_dim:int,
         'save_wrt_loss': save_wrt_loss,
         'noise_layer': noise_layer,
         'calculate_leakage': calculate_leakage,
-        'dataset': dataset_name
+        'dataset': dataset_name,
+        'clip_fairness': clip_fairness,
+        'normalize_fairness': normalize_fairness
     }
 
 
