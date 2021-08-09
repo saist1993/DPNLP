@@ -56,6 +56,7 @@ from typing import Optional
 @click.option('-calculate_leakage', '--calculate_leakage', type=bool, default=False, help="leakage from the test set.")
 @click.option('-clip_fairness', '--clip_fairness', type=bool, default=True, help="Clip fairness to max of 1.0")
 @click.option('-normalize_fairness', '--normalize_fairness', type=bool, default=False, help="normalizes fairness before multiplying with gradients.")
+@click.option('-fairness_iterator', '--fairness_iterator', type=str, default="train", help="train/custom_1/custom_2 etc.")
 def run(emb_dim:int,
          spacy_model:str,
          seed:int,
@@ -108,7 +109,8 @@ def run(emb_dim:int,
          sample_specific_class:bool,
          calculate_leakage:bool,
          clip_fairness:bool,
-         normalize_fairness:bool
+         normalize_fairness:bool,
+         fairness_iterator:str
          ):
     main.main(emb_dim,
              spacy_model,
@@ -162,7 +164,8 @@ def run(emb_dim:int,
              sample_specific_class,
              calculate_leakage,
              clip_fairness,
-             normalize_fairness
+             normalize_fairness,
+             fairness_iterator
              )
 
 if __name__ == '__main__':

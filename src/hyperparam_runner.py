@@ -162,7 +162,10 @@ if __name__ == '__main__':
                          fairness_function='demographic_parity',
                          fairness_score_function=fairness_score_function,
                          sample_specific_class=True,
-                         calculate_leakage=False
+                         calculate_leakage=False,
+                         clip_fairness=True,
+                         normalize_fairness=True,
+                         fairness_iterator='train'
                          )
                     logger.info(f"end of run - {unique_id}")
                 except KeyboardInterrupt:

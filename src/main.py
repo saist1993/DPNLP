@@ -78,7 +78,8 @@ def main(emb_dim:int,
          sample_specific_class:bool,
          calculate_leakage:bool,
          clip_fairness:bool,
-         normalize_fairness:bool
+         normalize_fairness:bool,
+         fairness_iterator:str
          ):
     '''
         A place keep all the design choices.
@@ -146,7 +147,8 @@ def main(emb_dim:int,
         'vocab': vocab,
         'use_adv_dataset': use_adv_dataset,
         'trim_data': trim_data,
-        'sample_specific_class': sample_specific_class
+        'sample_specific_class': sample_specific_class,
+        'fairness_iterator': fairness_iterator
     }
     vocab, number_of_labels, number_of_aux_labels, iterators, other_data_metadata = \
         generate_data_iterators(dataset_name=dataset_name, **iterator_params)

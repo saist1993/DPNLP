@@ -382,6 +382,7 @@ class SimpleAdvDatasetReader():
     def __init__(self, dataset_name:str,**params):
         self.dataset_name = dataset_name.lower()
         self.batch_size = params['batch_size']
+        self.fairness_iterator = params['fairness_iterator']
         self.train_split = .80
 
         if 'celeb' in self.dataset_name:
@@ -454,10 +455,7 @@ class SimpleAdvDatasetReader():
         dev_X, dev_y, dev_s = self.X[dev_index:test_index, :], self.y[dev_index:test_index], self.s[dev_index:test_index]
         test_X, test_y, test_s = self.X[test_index:, :], self.y[test_index:], self.s[test_index:]
 
-        # sample 10% of train and all of dev
-        sampled_index = np.random.randint(train_X.shape[0], size=int(train_X.shape[0]*.10))
-        fairness_X, fairness_y, fairness_s = np.vstack([train_X[sampled_index],dev_X])\
-            , np.hstack([train_y[sampled_index], dev_y]), np.hstack([train_s[sampled_index], dev_s])
+
 
 
 
@@ -466,7 +464,17 @@ class SimpleAdvDatasetReader():
         train_data = self.process_data(train_X,train_y,train_s, vocab=vocab)
         dev_data = self.process_data(dev_X,dev_y,dev_s, vocab=vocab)
         test_data = self.process_data(test_X,test_y,test_s, vocab=vocab)
-        fairness_data = self.process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
+
+        if self.fairness_iterator.lower() == 'train':
+            fairness_data = self.process_data(train_X, train_y, train_s, vocab=vocab)
+        elif self.fairness_iterator.lower() == 'custom_1':
+            # sample 10% of train and all of dev
+            sampled_index = np.random.randint(train_X.shape[0], size=int(train_X.shape[0] * .10))
+            fairness_X, fairness_y, fairness_s = np.vstack([train_X[sampled_index], dev_X]) \
+                , np.hstack([train_y[sampled_index], dev_y]), np.hstack([train_s[sampled_index], dev_s])
+            fairness_data = self.process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
+        else:
+            raise NotImplementedError
 
 
         train_iterator = torch.utils.data.DataLoader(train_data,
