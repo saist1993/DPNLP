@@ -357,6 +357,15 @@ def calculate_ddp_dde(preds, y, s, other_params):
 
     return [DDP, DEO], ((abs(DDP)+abs(DEO))/2.0)
 
+def calculate_diff_demographic_parity(preds, y, s, other_params):
+    [DDP, DEO], _ = calculate_ddp_dde(preds, y, s, other_params)
+    return DDP, {'ddp': DDP}
+
+def calculate_diff_equal_opportunity(preds, y, s, other_params):
+    [DDP, DEO], _ = calculate_ddp_dde(preds, y, s, other_params)
+    return DEO, {'deo': DEO}
+
+
 
 def get_positive_rate(y_predicted, y_true):
     """Compute the positive rate for given predictions of the class label.
@@ -677,6 +686,10 @@ def get_fairness_score_function(fairness_score_function):
         fairness_score_function = calculate_dummy_fairness
     elif fairness_score_function.lower() == 'fairness_adult_sensr':
         fairness_score_function = calculate_fairness_adult_sensr
+    elif fairness_score_function.lower() == 'diff_demographic_parity':
+        fairness_score_function = calculate_diff_demographic_parity
+    elif fairness_score_function.lower() == 'diff_equal_opportunity':
+        fairness_score_function = calculate_diff_equal_opportunity
     else:
         print("following type are supported: grms, equal_odds, demographic_parity, equal_opportunity")
         raise NotImplementedError
