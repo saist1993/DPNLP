@@ -201,7 +201,6 @@ class DomainAdaptationAmazon:
 
         return vocab, number_of_labels, number_of_labels, iterators, other_meta_data # empty dict for other_meta_data
 
-
 class MultiGroupSenSR:
     def __init__(self, dataset_name, **params):
         self.batch_size = params['batch_size']
@@ -375,9 +374,6 @@ class MultiGroupSenSR:
 
         return vocab, number_of_labels, number_of_labels, iterators, other_meta_data  # empty dict for other_meta_data
 
-
-
-
 class SimpleAdvDatasetReader():
     def __init__(self, dataset_name:str,**params):
         self.dataset_name = dataset_name.lower()
@@ -465,17 +461,11 @@ class SimpleAdvDatasetReader():
         dev_data = self.process_data(dev_X,dev_y,dev_s, vocab=vocab)
         test_data = self.process_data(test_X,test_y,test_s, vocab=vocab)
 
-        if self.fairness_iterator.lower() == 'train':
-            fairness_data = self.process_data(train_X, train_y, train_s, vocab=vocab)
-        elif self.fairness_iterator.lower() == 'custom_1':
-            # sample 10% of train and all of dev
-            sampled_index = np.random.randint(train_X.shape[0], size=int(train_X.shape[0] * .10))
-            fairness_X, fairness_y, fairness_s = np.vstack([train_X[sampled_index], dev_X]) \
-                , np.hstack([train_y[sampled_index], dev_y]), np.hstack([train_s[sampled_index], dev_s])
-            fairness_data = self.process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
-        else:
-            raise NotImplementedError
 
+        fairness_data = \
+            create_fairness_data(
+                train_X, train_y, train_s, dev_X, dev_y,
+                dev_s, self.process_data, vocab, self.fairness_iterator)
 
         train_iterator = torch.utils.data.DataLoader(train_data,
                                                      self.batch_size,
@@ -518,6 +508,313 @@ class SimpleAdvDatasetReader():
         return vocab, number_of_labels, number_of_labels, iterators, other_meta_data
 
 
+class EncodedDpNLP:
+    """Implements a set of dataset used by Differentially Private Representation for NLP: Formal Guarantee and An Empirical Study on Privacy and Fairness"""
+    def __init__(self, dataset_name, **params):
+        self.batch_size = params['batch_size']
+        self.dataset_name = dataset_name
+        self.fairness_iterator = params['fairness_iterator']
+        if self.dataset_name == 'blog':
+            self.index_for_s = 0
+        elif self.dataset_name == 'blog_v2':
+            self.index_for_s = 1
+        else:
+            raise NotImplementedError
+        if 'blog' in self.dataset_name: # blog dataset
+            self.file_name = [] # @TODO: find a location and save it.
+            self.file_name.append('../data/dpnlp/encoded_data/blog.pkl')
+            self.file_name.append('/home/gmaheshwari/storage/dpnlp/encoded_data/blog.pkl')
+        else:
+            raise NotImplementedError
+
+    def process_data(self, X,y,s, vocab):
+        """raw data is assumed to be tokenized"""
+        final_data = [(a,b,c) for a,b,c in zip(y,X,s)]
+
+
+        label_transform = sequential_transforms()
+        input_transform = sequential_transforms()
+        aux_transform = sequential_transforms()
+
+        transforms = (label_transform, input_transform, aux_transform)
+
+        return TextClassificationDataset(final_data, vocab, transforms)
+
+
+    def collate(self, batch):
+        labels, input, aux = zip(*batch)
+
+        labels = torch.LongTensor(labels)
+        aux = torch.LongTensor(aux)
+        lengths = torch.LongTensor([len(x) for x in input])
+        input = torch.FloatTensor(input)
+
+        input_data = {
+            'labels': labels,
+            'input': input,
+            'lengths': lengths,
+            'aux': aux
+        }
+
+        return input_data
+
+    def run(self):
+
+        try:
+            data = pickle.load(open(self.file_name[0], 'rb'))
+        except FileNotFoundError:
+            data = pickle.load(open(self.file_name[1], 'rb'))
+
+        y_train = np.asarray([int(d.label) for d in data.get_train_examples()])
+        s_train = np.asarray([int(d.aux_label[self.index_for_s]) for d in data.get_train_examples()])
+        X_train = np.asarray(data.get_train_encoding())
+
+        y_dev = np.asarray([int(d.label) for d in data.get_dev_examples()])
+        s_dev = np.asarray([int(d.aux_label[self.index_for_s]) for d in data.get_dev_examples()])
+        X_dev = np.asarray(data.get_dev_encoding())
+
+        y_test = np.asarray([int(d.label) for d in data.get_test_examples()])
+        s_test = np.asarray([int(d.aux_label[self.index_for_s]) for d in data.get_test_examples()])
+        X_test = np.asarray(data.get_test_encoding())
+
+        vocab = {'<pad>':1} # no need of vocab in these dataset. It is there for code compatibility purposes.
+        number_of_labels = len(data.get_labels())
+
+
+        # shuffling data
+        shuffle_train_index = np.random.permutation(len(X_train))
+        X_train, y_train, s_train = X_train[shuffle_train_index], y_train[shuffle_train_index], s_train[shuffle_train_index]
+
+        shuffle_dev_index = np.random.permutation(len(X_dev))
+        X_dev, y_dev, s_dev = X_dev[shuffle_dev_index], y_dev[shuffle_dev_index], s_dev[
+            shuffle_dev_index]
+
+        shuffle_test_index = np.random.permutation(len(X_test))
+        X_test, y_test, s_test = X_test[shuffle_test_index], y_test[shuffle_test_index], s_test[
+            shuffle_test_index]
+
+        train_data = self.process_data(X_train,y_train,s_train, vocab=vocab)
+        dev_data = self.process_data(X_dev,y_dev,s_dev, vocab=vocab)
+        test_data = self.process_data(X_test,y_test,s_test, vocab=vocab)
+
+        fairness_data = \
+            create_fairness_data(
+                X_train, y_train, s_train, X_dev, y_dev,
+                s_dev, self.process_data, vocab, self.fairness_iterator)
+
+
+        train_iterator = torch.utils.data.DataLoader(train_data,
+                                                     self.batch_size,
+                                                     shuffle=False,
+                                                     collate_fn=self.collate
+                                                     )
+
+        dev_iterator = torch.utils.data.DataLoader(dev_data,
+                                                   512,
+                                                   shuffle=False,
+                                                   collate_fn=self.collate
+                                                   )
+
+        test_iterator = torch.utils.data.DataLoader(test_data,
+                                                    512,
+                                                    shuffle=False,
+                                                    collate_fn=self.collate
+                                                    )
+
+        fairness_iterator = torch.utils.data.DataLoader(fairness_data,
+                                                        512,
+                                                        shuffle=False,
+                                                        collate_fn=self.collate
+                                                        )
+
+        iterators = []  # If it was k-fold. One could append k iterators here.
+        iterator_set = {
+            'train_iterator': train_iterator,
+            'valid_iterator': dev_iterator,
+            'test_iterator': test_iterator,
+            'fairness_iterator': fairness_iterator  # now this can be independent of the dev iterator.
+        }
+        iterators.append(iterator_set)
+
+        other_meta_data = {}
+        other_meta_data['task'] = 'simple_classification'
+        other_meta_data['dataset_name'] = self.dataset_name
+        other_meta_data['index_for_s'] = self.index_for_s
+
+        return vocab, number_of_labels, number_of_labels, iterators, other_meta_data
+
+class EncodedEmoji:
+    def __init__(self, dataset_name, **params):
+        self.batch_size = params['batch_size']
+        self.dataset_name = dataset_name
+        self.n = 100000 # https://github.com/HanXudong/Diverse_Adversaries_for_Mitigating_Bias_in_Training/blob/b5b4c99ada17b3c19ab2ae8789bb56058cb72643/scripts_deepmoji.py#L270
+        self.folder_location = '../data/deepmoji'
+        try:
+            self.ratio = params['ratio_of_pos_neg']
+        except:
+            self.ratio = 0.8 # this the default in https://arxiv.org/pdf/2101.10001.pdf
+        self.batch_size = params['batch_size']
+        self.fairness_iterator = params['fairness_iterator']
+
+    def read_data_file(self, input_file: str):
+        vecs = np.load(input_file)
+
+        np.random.shuffle(vecs)
+
+        return vecs[:40000], vecs[40000:42000], vecs[42000:44000]
+
+    def process_data(self, X,y,s, vocab):
+        """raw data is assumed to be tokenized"""
+        final_data = [(a,b,c) for a,b,c in zip(y,X,s)]
+
+
+        label_transform = sequential_transforms()
+        input_transform = sequential_transforms()
+        aux_transform = sequential_transforms()
+
+        transforms = (label_transform, input_transform, aux_transform)
+
+        return TextClassificationDataset(final_data, vocab, transforms)
+
+
+    def collate(self, batch):
+        labels, input, aux = zip(*batch)
+
+        labels = torch.LongTensor(labels)
+        aux = torch.LongTensor(aux)
+        lengths = torch.LongTensor([len(x) for x in input])
+        input = torch.FloatTensor(input)
+
+        input_data = {
+            'labels': labels,
+            'input': input,
+            'lengths': lengths,
+            'aux': aux
+        }
+
+        return input_data
+
+    def run(self):
+
+        try:
+
+            train_pos_pos, dev_pos_pos, test_pos_pos = self.read_data_file(f"{self.folder_location}/pos_pos.npy")
+            train_pos_neg, dev_pos_neg, test_pos_neg = self.read_data_file(f"{self.folder_location}/pos_neg.npy")
+            train_neg_pos, dev_neg_pos, test_neg_pos = self.read_data_file(f"{self.folder_location}/neg_pos.npy")
+            train_neg_neg, dev_neg_neg, test_neg_neg = self.read_data_file(f"{self.folder_location}/neg_neg.npy")
+
+        except:
+
+            self.folder_location = '/home/gmaheshwari/storage/fair_nlp_dataset/data/deepmoji'
+            train_pos_pos, dev_pos_pos, test_pos_pos = self.read_data_file(f"{self.folder_location}/pos_pos.npy")
+            train_pos_neg, dev_pos_neg, test_pos_neg = self.read_data_file(f"{self.folder_location}/pos_neg.npy")
+            train_neg_pos, dev_neg_pos, test_neg_pos = self.read_data_file(f"{self.folder_location}/neg_pos.npy")
+            train_neg_neg, dev_neg_neg, test_neg_neg = self.read_data_file(f"{self.folder_location}/neg_neg.npy")
+
+
+        n_1 = int(self.n * self.ratio / 2)
+        n_2 = int(self.n * (1 - self.ratio) / 2)
+
+        fnames = ['pos_pos.npy', 'pos_neg.npy', 'neg_pos.npy', 'neg_neg.npy']
+        main_labels = [1, 1, 0, 0]
+        protected_labels = [1, 0, 1, 0]
+        ratios = [n_1, n_2, n_2, n_1]
+        data = [train_pos_pos, train_pos_neg, train_neg_pos, train_neg_neg]
+
+        X_train, y_train, s_train = [], [], []
+
+        # loading data for train
+
+        for data_file, main_label, protected_label, ratio in zip(data, main_labels, protected_labels, ratios):
+            X_train = X_train + list(data_file[:ratio])
+            y_train = y_train + [main_label] * len(data_file[:ratio])
+            s_train = s_train + [protected_label] * len(data_file[:ratio])
+
+
+        X_dev, y_dev, s_dev = [], [], []
+        for data_file, main_label, protected_label in zip([dev_pos_pos, dev_pos_neg, dev_neg_pos, dev_neg_neg]
+                , main_labels, protected_labels):
+            X_dev = X_dev + list(data_file)
+            y_dev = y_dev + [main_label] * len(data_file)
+            s_dev = s_dev + [protected_label] * len(data_file)
+
+
+        X_test, y_test, s_test = [], [], []
+        for data_file, main_label, protected_label in zip([test_pos_pos, test_pos_neg, test_neg_pos, test_neg_neg]
+                , main_labels, protected_labels):
+            X_test = X_test + list(data_file)
+            y_test = y_test + [main_label] * len(data_file)
+            s_test = s_test + [protected_label] * len(data_file)
+
+
+        X_train, y_train, s_train = np.asarray(X_train), np.asarray(y_train), np.asarray(s_train)
+        X_dev, y_dev, s_dev = np.asarray(X_dev), np.asarray(y_dev), np.asarray(s_dev)
+        X_test, y_test, s_test = np.asarray(X_test), np.asarray(y_test), np.asarray(s_test)
+
+
+        vocab = {'<pad>':1} # no need of vocab in these dataset. It is there for code compatibility purposes.
+        number_of_labels = 2
+
+        # shuffling data
+        shuffle_train_index = np.random.permutation(len(X_train))
+        X_train, y_train, s_train = X_train[shuffle_train_index], y_train[shuffle_train_index], s_train[shuffle_train_index]
+
+        shuffle_dev_index = np.random.permutation(len(X_dev))
+        X_dev, y_dev, s_dev = X_dev[shuffle_dev_index], y_dev[shuffle_dev_index], s_dev[
+            shuffle_dev_index]
+
+        shuffle_test_index = np.random.permutation(len(X_test))
+        X_test, y_test, s_test = X_test[shuffle_test_index], y_test[shuffle_test_index], s_test[
+            shuffle_test_index]
+
+        train_data = self.process_data(X_train,y_train,s_train, vocab=vocab)
+        dev_data = self.process_data(X_dev,y_dev,s_dev, vocab=vocab)
+        test_data = self.process_data(X_test,y_test,s_test, vocab=vocab)
+
+        fairness_data = \
+            create_fairness_data(
+                X_train, y_train, s_train, X_dev, y_dev,
+                s_dev, self.process_data, vocab, self.fairness_iterator)
+
+
+        train_iterator = torch.utils.data.DataLoader(train_data,
+                                                     self.batch_size,
+                                                     shuffle=False,
+                                                     collate_fn=self.collate
+                                                     )
+
+        dev_iterator = torch.utils.data.DataLoader(dev_data,
+                                                   512,
+                                                   shuffle=False,
+                                                   collate_fn=self.collate
+                                                   )
+
+        test_iterator = torch.utils.data.DataLoader(test_data,
+                                                    512,
+                                                    shuffle=False,
+                                                    collate_fn=self.collate
+                                                    )
+
+        fairness_iterator = torch.utils.data.DataLoader(fairness_data,
+                                                        512,
+                                                        shuffle=False,
+                                                        collate_fn=self.collate
+                                                        )
+
+        iterators = []  # If it was k-fold. One could append k iterators here.
+        iterator_set = {
+            'train_iterator': train_iterator,
+            'valid_iterator': dev_iterator,
+            'test_iterator': test_iterator,
+            'fairness_iterator': fairness_iterator  # now this can be independent of the dev iterator.
+        }
+        iterators.append(iterator_set)
+
+        other_meta_data = {}
+        other_meta_data['task'] = 'simple_classification'
+        other_meta_data['dataset_name'] = self.dataset_name
+
+        return vocab, number_of_labels, number_of_labels, iterators, other_meta_data
 
 def generate_data_iterators(dataset_name:str, **kwargs):
 
@@ -531,11 +828,30 @@ def generate_data_iterators(dataset_name:str, **kwargs):
     elif dataset_name.lower() in "_".join(['celeb', 'crime', 'dutch', 'compas', 'german', 'adult', 'gaussian','adult', 'multigroups']):
         dataset_creator = SimpleAdvDatasetReader(dataset_name=dataset_name, **kwargs)
         vocab, number_of_labels, number_of_aux_labels, iterators, other_meta_data = dataset_creator.run()
+    elif  dataset_name.lower() in "_".join(['blog', 'blog_v2']):
+        dataset_creator = EncodedDpNLP(dataset_name=dataset_name, **kwargs)
+        vocab, number_of_labels, number_of_aux_labels, iterators, other_meta_data = dataset_creator.run()
+    elif dataset_name.lower() == 'encoded_emoji':
+        dataset_creator = EncodedEmoji(dataset_name=dataset_name, **kwargs)
+        vocab, number_of_labels, number_of_aux_labels, iterators, other_meta_data = dataset_creator.run()
     else:
         raise CustomError("No such dataset")
 
 
     return vocab, number_of_labels, number_of_aux_labels, iterators, other_meta_data
+
+
+def create_fairness_data(train_X, train_y, train_s, dev_X, dev_y, dev_s, process_data, vocab, method):
+    if method.lower() == 'train':
+        return process_data(train_X, train_y, train_s, vocab=vocab)
+    elif method.lower() == 'custom_1':
+        # sample 10% of train and all of dev
+        sampled_index = np.random.randint(train_X.shape[0], size=int(train_X.shape[0] * .10))
+        fairness_X, fairness_y, fairness_s = np.vstack([train_X[sampled_index], dev_X]) \
+            , np.hstack([train_y[sampled_index], dev_y]), np.hstack([train_s[sampled_index], dev_s])
+        return process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
+    else:
+        raise NotImplementedError
 
 if __name__ == '__main__':
     dataset_name = 'amazon_electronics'

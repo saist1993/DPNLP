@@ -112,7 +112,7 @@ def main(emb_dim:int,
     elif "adult_multigroup_sensr" in dataset_name:
         logger.info(f"model chossen amazon model")
         model_arch_params = config.simple_classification_dataset_model # don't need this expressive model. Simplify it!
-    elif "adult" in dataset_name:
+    elif "adult"  in dataset_name or "dutch" in dataset_name:
         logger.info(f"model chossen adult model")
         model_arch_params = config.simple_classification_dataset_model  # don't need this expressive model. Simplify it!
 
