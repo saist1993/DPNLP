@@ -22,7 +22,6 @@ def epoch_time(start_time, end_time):
     elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
     return elapsed_mins, elapsed_secs
 
-
 def calculate_lekage_old(model, dev_iterator, test_iterator, device):
 
     def temp(model, iterator, device):
@@ -68,8 +67,6 @@ def calculate_lekage_old(model, dev_iterator, test_iterator, device):
 
     return test_hidden_leakage, test_logits_leakage
 
-
-
 def calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='svm'):
     if method == 'svm':
         biased_classifier = LinearSVC(fit_intercept=True, class_weight='balanced', dual=False, C=0.1, max_iter=10000)
@@ -78,3 +75,21 @@ def calculate_leakage(train_preds, train_labels, test_preds, test_labels, method
         return leakage
     else:
         raise NotImplementedError
+
+def generate_predictions(model, iterator, device):
+    all_preds = []
+    with torch.no_grad():
+        for items in tqdm(iterator):
+
+            # setting up the device
+            for key in items.keys():
+                items[key] = items[key].to(device)
+
+            items['gradient_reversal'] = False
+            output = model(items)
+            predictions = output['prediction']
+            all_preds.append(predictions.argmax(1))
+
+    # flattening all_preds
+    all_preds = torch.cat(all_preds, out=torch.Tensor(len(all_preds), all_preds[0].shape[0])).to(device)
+    return all_preds

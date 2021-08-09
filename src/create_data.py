@@ -454,11 +454,20 @@ class SimpleAdvDatasetReader():
         dev_X, dev_y, dev_s = self.X[dev_index:test_index, :], self.y[dev_index:test_index], self.s[dev_index:test_index]
         test_X, test_y, test_s = self.X[test_index:, :], self.y[test_index:], self.s[test_index:]
 
+        # sample 10% of train and all of dev
+        sampled_index = np.random.randint(train_X.shape[0], size=int(train_X.shape[0]*.10))
+        fairness_X, fairness_y, fairness_s = np.vstack([train_X[sampled_index],dev_X])\
+            , np.hstack([train_y[sampled_index], dev_y]), np.hstack([train_s[sampled_index], dev_s])
+
+
+
         vocab = {'<pad>':1} # no need of vocab in these dataset. It is there for code compatibility purposes.
 
         train_data = self.process_data(train_X,train_y,train_s, vocab=vocab)
         dev_data = self.process_data(dev_X,dev_y,dev_s, vocab=vocab)
         test_data = self.process_data(test_X,test_y,test_s, vocab=vocab)
+        fairness_data = self.process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
+
 
         train_iterator = torch.utils.data.DataLoader(train_data,
                                                      self.batch_size,
@@ -478,11 +487,18 @@ class SimpleAdvDatasetReader():
                                                     collate_fn=self.collate
                                                     )
 
+        fairness_iterator = torch.utils.data.DataLoader(fairness_data,
+                                                    512,
+                                                    shuffle=False,
+                                                    collate_fn=self.collate
+                                                    )
+
         iterators = []  # If it was k-fold. One could append k iterators here.
         iterator_set = {
             'train_iterator': train_iterator,
             'valid_iterator': dev_iterator,
-            'test_iterator': test_iterator
+            'test_iterator': test_iterator,
+            'fairness_iterator': fairness_iterator # now this can be independent of the dev iterator.
         }
         iterators.append(iterator_set)
 
