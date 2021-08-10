@@ -216,8 +216,18 @@ def calculate_grms(preds, y, s, other_params=None):
         positive_rate = torch.mean((preds[y == uc] == uc).float())  # prob(pred=doctor/y=doctor)
         for group in unique_groups:  # iterating over each group say: group=male for the firt iteration
             mask_pos = torch.logical_and(y == uc, s == group)  # find instances with y=doctor and s=male
-            g_fairness_pos = torch.mean((preds[mask_pos] == uc).float())
-            temp = g_fairness_pos.item()
+            g_fairness_pos = torch.mean((preds[mask_pos] == uc).float()) # this is wrong
+            '''
+                It should be TP/TP + FN 
+                
+                where TP is gold = doctor and pred = doctor 
+                    FN is gold = doctor but pred != doctor
+                    g_fairness_pos = TP / (TP + FN) 
+            '''
+            TP = torch.sum(preds[mask_pos] == y[mask_pos]).item()# pred == doctor
+            FN = torch.sum(preds[mask_pos] != y[mask_pos]).item()
+            temp = TP*1.0/(TP+FN)
+            # temp = g_fairness_pos.item()
             if math.isnan(temp):
                 temp = 0.0
             group_fairness[uc][group] = temp

@@ -81,15 +81,15 @@ if __name__ == '__main__':
 
     lrs = [('adam', 0.001)]
 
-    fairness_clippings = [True, False]
-    fairness_normalizations = [True, False]
-    fairness_functions = ['demographic_parity', 'equal_opportunity']
-    fairness_iterators = ['train', 'custom_1']
+    # fairness_clippings = [True, False]
+    # fairness_normalizations = [True, False]
+    # fairness_functions = ['demographic_parity', 'equal_opportunity']
+    # fairness_iterators = ['train', 'custom_1']
 
     fairness_clippings = [True]
     fairness_normalizations = [True]
-    fairness_functions = ['demographic_parity', 'equal_opportunity']
-    fairness_iterators = ['custom_1']
+    fairness_functions = ['demographic_parity']
+    fairness_iterators = ['train']
 
     for optimizer, lr in lrs:
         for fair_clip in fairness_clippings:

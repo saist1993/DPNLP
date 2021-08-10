@@ -35,6 +35,9 @@ if __name__ == '__main__':
     parser.add_argument('--adv_end', '-adv_e', help="end of adv scale 1.0", type=float)
     parser.add_argument('--epochs', '-epochs', help="epochs!", type=int)
     parser.add_argument('--use_lr_schedule', '-use_lr_schedule', help="use_lr_schedule!", type=str)
+    parser.add_argument('--mode_of_loss_scale', '-mode_of_loss_scale', help="constant/linear/exp", type=str)
+    parser.add_argument('--seed', '-seed', help="1234", type=int)
+
 
     args = parser.parse_args()
 
@@ -78,9 +81,10 @@ if __name__ == '__main__':
     is_adv = str2bool(args.is_adv)
     bs = 64
     only_perturbate = True
-    mode_of_loss_scale = 'linear' # linear atleast for amazon!
+    mode_of_loss_scale = args.mode_of_loss_scale # linear atleast for amazon!
     # optimizer = 'sgd'
     use_lr_schedule = str2bool(args.use_lr_schedule)
+    seed = args.seed
 
 
 
@@ -93,7 +97,7 @@ if __name__ == '__main__':
         epss = [0.0]
 
     if is_adv:
-        adv_scales = [round(i,2) for i in np.arange(args.adv_start,args.adv_end,0.05)]
+        adv_scales = [round(i,2) for i in np.arange(args.adv_start,args.adv_end,0.1)]
     else:
         adv_scales = [0.0]
 
@@ -114,7 +118,7 @@ if __name__ == '__main__':
                     logger.info(f"start of run - {unique_id}")
                     main(emb_dim=300,
                          spacy_model="en_core_web_sm",
-                         seed=1234,
+                         seed=seed,
                          dataset_name=dataset_name,
                          batch_size=bs,
                          pad_token='<pad>',

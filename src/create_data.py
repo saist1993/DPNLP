@@ -410,6 +410,7 @@ class SimpleAdvDatasetReader():
 
     def process_data(self, X,y,s, vocab):
         """raw data is assumed to be tokenized"""
+
         final_data = [(a,b,c) for a,b,c in zip(y,X,s)]
 
 
@@ -442,6 +443,9 @@ class SimpleAdvDatasetReader():
 
     def run(self):
         dataset_size = self.X.shape[0] # examples*feature_size
+        # the dataset is shuffled so as to get a unique test set for each seed.
+        index = np.random.permutation(dataset_size)
+        self.X, self.y, self.s = self.X[index], self.y[index], self.s[index]
         test_index = int(self.train_split*dataset_size)
         dev_index = int(self.train_split*dataset_size) - int(self.train_split*dataset_size*.10)
 

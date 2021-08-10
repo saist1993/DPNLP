@@ -118,7 +118,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         else:
             normalization = torch.tensor(1.0)
 
-        total_loss = torch.mean(total_loss * (1 - fairness.to(device)/normalization.to(device)))
+        total_loss = torch.mean(total_loss * (1 - fairness.to(device))/normalization.to(device))
         total_loss.backward()
         optimizer.step()
 
