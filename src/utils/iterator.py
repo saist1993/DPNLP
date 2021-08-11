@@ -1,5 +1,5 @@
 import torch
-from torchtext.data.utils import ngrams_iterator
+# from torchtext.data.utils import ngrams_iterator
 
 __all__ = [
     'vocab_func',
@@ -8,6 +8,28 @@ __all__ = [
     'sequential_transforms'
 ]
 
+
+def ngrams_iterator(token_list, ngrams):
+    """Return an iterator that yields the given tokens and their ngrams.
+
+    Args:
+        token_list: A list of tokens
+        ngrams: the number of ngrams.
+
+    Examples:
+        >>> token_list = ['here', 'we', 'are']
+        >>> list(ngrams_iterator(token_list, 2))
+        >>> ['here', 'here we', 'we', 'we are', 'are']
+    """
+
+    def _get_ngrams(n):
+        return zip(*[token_list[i:] for i in range(n)])
+
+    for x in token_list:
+        yield x
+    for n in range(2, ngrams + 1):
+        for x in _get_ngrams(n):
+            yield ' '.join(x)
 
 def vocab_func(vocab):
     def func(tok_iter):

@@ -148,7 +148,8 @@ def main(emb_dim:int,
         'use_adv_dataset': use_adv_dataset,
         'trim_data': trim_data,
         'sample_specific_class': sample_specific_class,
-        'fairness_iterator': fairness_iterator
+        'fairness_iterator': fairness_iterator,
+        'fair_grad': fair_grad # Needs a larger validation split.
     }
     vocab, number_of_labels, number_of_aux_labels, iterators, other_data_metadata = \
         generate_data_iterators(dataset_name=dataset_name, **iterator_params)

@@ -26,6 +26,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_name', '-dataset', help="name of the dataset", type=str)
     parser.add_argument('--epochs', '-epochs', help="epochs!", type=int)
     parser.add_argument('--use_lr_schedule', '-use_lr_schedule', help="use_lr_schedule!", type=str)
+    parser.add_argument('--fairness_iterator', '-fairness_iterator', nargs="*", help="--fairness_iterator custom_1 custom_2 custom_3 train", type=str)
     # parser.add_argument('--use_clipping', '-use_clipping', help="employs clipping!", type=str)
     # parser.add_argument('--use_normalization', '-use_normalization', help="employs normalization", type=str)
     # parser.add_argument('--fairness_iterator', '-fairness_iterator', help="the type of fairness iterator to use", type=str)
@@ -89,7 +90,9 @@ if __name__ == '__main__':
     fairness_clippings = [True]
     fairness_normalizations = [True]
     fairness_functions = ['demographic_parity']
-    fairness_iterators = ['train']
+    # fairness_iterators = ['custom_1', 'custom_2', 'custom_3']
+    fairness_iterators = args.fairness_iterator
+
 
     for optimizer, lr in lrs:
         for fair_clip in fairness_clippings:

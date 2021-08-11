@@ -380,6 +380,7 @@ class SimpleAdvDatasetReader():
         self.batch_size = params['batch_size']
         self.fairness_iterator = params['fairness_iterator']
         self.train_split = .80
+        self.is_fair_grad = params['fair_grad']
 
         if 'celeb' in self.dataset_name:
             self.X, self.y, self.s = get_celeb_data()
@@ -447,7 +448,11 @@ class SimpleAdvDatasetReader():
         index = np.random.permutation(dataset_size)
         self.X, self.y, self.s = self.X[index], self.y[index], self.s[index]
         test_index = int(self.train_split*dataset_size)
-        dev_index = int(self.train_split*dataset_size) - int(self.train_split*dataset_size*.10)
+
+        if self.is_fair_grad:
+            dev_index = int(self.train_split*dataset_size) - int(self.train_split*dataset_size*.25)
+        else:
+            dev_index = int(self.train_split * dataset_size) - int(self.train_split * dataset_size * .10)
 
         number_of_labels = len(np.unique(self.y))
 
@@ -845,7 +850,8 @@ def generate_data_iterators(dataset_name:str, **kwargs):
     return vocab, number_of_labels, number_of_aux_labels, iterators, other_meta_data
 
 
-def create_fairness_data(train_X, train_y, train_s, dev_X, dev_y, dev_s, process_data, vocab, method):
+def create_fairness_data_old(train_X, train_y, train_s, dev_X, dev_y, dev_s, process_data, vocab, method):
+    sampling_percentage = .20
     if method.lower() == 'train':
         return process_data(train_X, train_y, train_s, vocab=vocab)
     elif method.lower() == 'custom_1':
@@ -853,6 +859,48 @@ def create_fairness_data(train_X, train_y, train_s, dev_X, dev_y, dev_s, process
         sampled_index = np.random.randint(train_X.shape[0], size=int(train_X.shape[0] * .10))
         fairness_X, fairness_y, fairness_s = np.vstack([train_X[sampled_index], dev_X]) \
             , np.hstack([train_y[sampled_index], dev_y]), np.hstack([train_s[sampled_index], dev_s])
+        return process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
+    elif method.lower == 'custom_2':
+        # 20% of the train samples
+        sampled_index = np.random.randint(train_X.shape[0], size=int(train_X.shape[0] * sampling_percentage))
+        fairness_X, fairness_y, fairness_s = train_X[sampled_index], train_y[sampled_index], train_s[sampled_index]
+        return process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
+    elif method.lower == 'custom_3':
+        # just validation
+        return process_data(dev_X, dev_y, dev_s, vocab=vocab)
+    elif method.lower == 'custom_4':
+        # 20% of the randomly sampled data
+        total_size = train_X.shape[0] + dev_X.shape[0]
+        sampled_index = np.random.randint(total_size, size=int(total_size * sampling_percentage))
+        fairness_X, fairness_y, fairness_s = np.vstack([train_X, dev_X])[sampled_index] \
+            , np.hstack([train_y, dev_y])[sampled_index], np.hstack([train_s, dev_s])[sampled_index]
+        return process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
+    else:
+        raise NotImplementedError
+
+
+def create_fairness_data(train_X, train_y, train_s, dev_X, dev_y, dev_s, process_data, vocab, method):
+    sampling_percentage = .20
+    total_size = train_X.shape[0] + dev_X.shape[0]
+    no_examples_to_sample = int(total_size*sampling_percentage)
+    # assert dev_X.shape[0] >= no_examples_to_sample
+
+    if method.lower() == 'train':
+        return process_data(train_X, train_y, train_s, vocab=vocab)
+    elif method.lower() == 'custom_1':
+        # sample from train
+        sampled_index = np.random.randint(train_X.shape[0], size=no_examples_to_sample)
+        fairness_X, fairness_y, fairness_s = train_X[sampled_index], train_y[sampled_index], train_s[sampled_index]
+        return process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
+    elif method.lower() == 'custom_2':
+        # sample from valid
+        sampled_index = np.random.randint(dev_X.shape[0], size=no_examples_to_sample)
+        fairness_X, fairness_y, fairness_s = dev_X[sampled_index], dev_y[sampled_index], dev_s[sampled_index]
+        return process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
+    elif method.lower() == 'custom_3':
+        sampled_index = np.random.randint(total_size, size=no_examples_to_sample)
+        fairness_X, fairness_y, fairness_s = np.vstack([train_X, dev_X])[sampled_index] \
+            , np.hstack([train_y, dev_y])[sampled_index], np.hstack([train_s, dev_s])[sampled_index]
         return process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
     else:
         raise NotImplementedError
