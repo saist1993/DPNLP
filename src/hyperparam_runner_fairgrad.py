@@ -27,6 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', '-epochs', help="epochs!", type=int)
     parser.add_argument('--use_lr_schedule', '-use_lr_schedule', help="use_lr_schedule!", type=str)
     parser.add_argument('--fairness_iterator', '-fairness_iterator', nargs="*", help="--fairness_iterator custom_1 custom_2 custom_3 train", type=str)
+    parser.add_argument('--seed', '-seed', help="1234", type=int)
     # parser.add_argument('--use_clipping', '-use_clipping', help="employs clipping!", type=str)
     # parser.add_argument('--use_normalization', '-use_normalization', help="employs normalization", type=str)
     # parser.add_argument('--fairness_iterator', '-fairness_iterator', help="the type of fairness iterator to use", type=str)
@@ -82,16 +83,17 @@ if __name__ == '__main__':
 
     lrs = [('adam', 0.001)]
 
-    # fairness_clippings = [True, False]
-    # fairness_normalizations = [True, False]
-    # fairness_functions = ['demographic_parity', 'equal_opportunity']
+    fairness_clippings = [True, False]
+    fairness_normalizations = [True, False]
+    fairness_functions = ['demographic_parity', 'equal_opportunity']
     # fairness_iterators = ['train', 'custom_1']
 
-    fairness_clippings = [True]
-    fairness_normalizations = [True]
-    fairness_functions = ['demographic_parity']
+    # fairness_clippings = [True]
+    # fairness_normalizations = [True]
+    # fairness_functions = ['demographic_parity']
     # fairness_iterators = ['custom_1', 'custom_2', 'custom_3']
     fairness_iterators = args.fairness_iterator
+    seed = args.seed
 
 
     for optimizer, lr in lrs:
@@ -104,7 +106,7 @@ if __name__ == '__main__':
                             logger.info(f"start of run - {unique_id}")
                             main(emb_dim=300,
                                  spacy_model="en_core_web_sm",
-                                 seed=1234,
+                                 seed=seed,
                                  dataset_name=dataset_name,
                                  batch_size=bs,
                                  pad_token='<pad>',
