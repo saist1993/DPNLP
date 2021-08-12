@@ -192,6 +192,12 @@ class LinearAdv(nn.Module):
     def layers(self):
         return torch.nn.ModuleList([self.encoder, self.classifier, self.adv])
 
+    def reset(self):
+        self.adv.apply(initialize_parameters)  # don't know, if this is needed.
+        self.classifier.apply(initialize_parameters)  # don't know, if this is needed.
+        self.encoder.apply(initialize_parameters)  # don't know, if this is needed.
+
+
 
 
 

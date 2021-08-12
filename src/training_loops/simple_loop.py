@@ -3,12 +3,14 @@
 '''
 import math
 import time
+import copy
 import torch
 import logging
 import numpy as np
 from tqdm.auto import tqdm
+from functools import partial
+from mytorch.utils.goodies import *
 from .common_functionality import *
-
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +24,8 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
     is_adv = other_params['is_adv'] # adv
     is_regression = other_params['is_regression']
     task = other_params['task']
-    if task == 'domain_adaptation':
-        assert is_adv == True
+    # if task == 'domain_adaptation':
+    #     assert is_adv == True
 
     # tracking stuff
     epoch_loss_main = []
@@ -48,7 +50,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         optimizer.zero_grad()
         output = model(items)
 
-        if task == 'domain_adaptation':
+        if task == 'unsupervised_domain_adaptation':
             output['prediction'] = output['prediction'][items['aux'] == 0]  # 0 is the src domain.
             items['labels'] = items['labels'][items['aux'] == 0]
 
@@ -283,7 +285,7 @@ def training_loop( n_epochs:int,
 
         print(test_output['group_fairness'])
 
-        if "amazon" in dataset:
+        if "ama1zon" in dataset:
             train_preds = np.vstack([val_other_data['all_hidden'][:int(0.60*len(val_other_data['all_hidden']))],
                                      test_other_data['all_hidden'][:int(0.60*len(test_other_data['all_hidden']))]])
 
@@ -362,3 +364,61 @@ def training_loop( n_epochs:int,
             wandb.log({'test_' + key:value for key, value in test_output.items()})
 
     return best_test_acc, best_valid_acc, test_acc_at_best_valid_acc
+
+
+def k_fold_training_loop(n_epochs:int,
+        model,
+        iterator,
+        optimizer,
+        criterion,
+        device,
+        model_save_name,
+        accuracy_calculation_function,
+        wandb,
+        other_params):
+
+    fold_accuracy = []
+    # original_model = copy.copy(model)
+    for index, iter in enumerate(iterator):
+
+        logger.info(f"starting fold {index}")
+
+        # choosing the optimization function.
+        if other_params['opt_name'].lower() == 'adagrad':
+            opt_fn = partial(torch.optim.Adagrad)
+        elif other_params['opt_name'].lower() == 'adam':
+            opt_fn = partial(torch.optim.Adam)
+        elif other_params['opt_name'].lower() == 'sgd':
+            opt_fn = partial(torch.optim.SGD)
+        else:
+            raise CustomError("no optimizer selected")
+        optimizer = make_opt(model, opt_fn, lr=other_params['lr'])
+
+        # setup
+        if other_params['use_lr_schedule']:
+            lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer=optimizer,
+                mode='min',
+                patience=3,
+                factor=0.1,
+                verbose=True
+            )
+        else:
+            lr_scheduler = None
+
+        other_params['lr_scheduler'] = lr_scheduler
+
+
+
+        best_test_acc, best_valid_acc, test_acc_at_best_valid_acc = training_loop(n_epochs, model, iter, optimizer,
+        criterion, device, model_save_name, accuracy_calculation_function, wandb, other_params)
+        logger.info(f"fold acc for {index} is {test_acc_at_best_valid_acc}, and other info {best_test_acc}, {best_valid_acc}")
+        print(f"fold acc for {index} is {test_acc_at_best_valid_acc}, and other info {best_test_acc}, {best_valid_acc}")
+        fold_accuracy.append(test_acc_at_best_valid_acc)
+        logger.info(f"end fold {index}")
+        model.reset()
+
+    final_acc = np.mean(fold_accuracy)
+    print(f"and the final acc is {final_acc}")
+
+    return 0.0, 0.0, final_acc

@@ -41,6 +41,7 @@ class DomainAdaptationAmazon:
 
         self.file_location = config.dataset_location['amazon']
         self.all_domain_names = ['books', 'dvd', 'electronics', 'kitchen']
+        self.supervised_da = params['supervised_da']
 
     def process_data(self, X, y, s, vocab):
         """raw data is assumed to be tokenized"""
@@ -118,8 +119,13 @@ class DomainAdaptationAmazon:
 
         return src_x_train, src_y_train, src_x_test, src_y_test, target_x_train, target_y_train, target_x_test, target_y_test
 
-
     def run(self):
+        if self.supervised_da:
+            return self.run_kfold()
+        else:
+            return self.run_non_kfold()
+
+    def run_non_kfold(self):
         xs, ys, xs_test, ys_test, xt, yt, xt_test, yt_test = self.load_method()
         '''
             It can be the case that xs and xt are not same shape i.e not of equal length. 
@@ -196,10 +202,102 @@ class DomainAdaptationAmazon:
         iterators.append(iterator_set)
 
         other_meta_data = {}
-        other_meta_data['task'] = 'domain_adaptation'
+        other_meta_data['task'] = 'unsupervised_domain_adaptation'
         other_meta_data['dataset_name'] = self.dataset_name
 
         return vocab, number_of_labels, number_of_labels, iterators, other_meta_data # empty dict for other_meta_data
+
+    def run_kfold(self):
+        k_fold = 5
+        xs, ys, xs_test, ys_test, xt, yt, _, _ = self.load_method()
+        s_source = np.zeros_like(ys)
+
+
+        sampling_percentage = 1.0/k_fold
+        target_samples = xt.shape[0] # do note we don't use the test set. @TODO: verify that others don't either
+        one_fold_length = int(sampling_percentage*target_samples)
+        fold_indexes = [[i for i in range(int((i-1)*one_fold_length),int(i*one_fold_length)) ] for i in range(k_fold+1)][1:]
+        sampling_indexes = []
+        iterators = []
+        vocab = {'<pad>': 1}  # no need of vocab in these dataset. It is there for code compatibility purposes.
+
+
+        for i in range(k_fold):
+            test_index = i
+            if i == k_fold - 1:
+                valid_index = 0
+            else:
+                valid_index = i + 1
+            ignore_index = [test_index, valid_index]
+            train_index = [i for i in range(k_fold) if i not in ignore_index]
+            sampling_indexes.append([test_index, valid_index, train_index])
+
+
+        for test_index, valid_index, train_index in sampling_indexes:
+            _xt_valid,_yt_valid, _xt_test, _yt_test = xt[fold_indexes[valid_index]], yt[fold_indexes[valid_index]], xt[fold_indexes[test_index]], yt[fold_indexes[test_index]]
+            _xt_train = np.vstack([xt[fold_indexes[index]] for index in train_index])
+            _yt_train = np.hstack([yt[fold_indexes[index]] for index in train_index])
+            s_target = np.ones_like(_yt_train)
+
+            # now combine - for train
+            train_X = np.vstack([_xt_train, xs])
+            train_s = np.hstack([s_target, s_source])
+            train_y = np.hstack([_yt_train, ys])
+
+            # shuffle data
+            shuffle_index = np.random.permutation(train_X.shape[0])
+            train_X, train_y, train_s = train_X[shuffle_index], train_y[shuffle_index], train_s[shuffle_index]
+
+
+            # setup dev and test
+            dev_X, dev_y, dev_s = _xt_valid,_yt_valid, np.ones_like(_yt_valid)
+            test_X, test_y, test_s = _xt_test, _yt_test, np.ones_like(_yt_test)
+
+            train_data = self.process_data(train_X, train_y, train_s, vocab=vocab)
+            dev_data = self.process_data(dev_X, dev_y, dev_s, vocab=vocab)
+            test_data = self.process_data(test_X, test_y, test_s, vocab=vocab)
+
+            train_iterator = torch.utils.data.DataLoader(train_data,
+                                                         self.batch_size,
+                                                         shuffle=False,
+                                                         collate_fn=self.collate
+                                                         )
+
+            dev_iterator = torch.utils.data.DataLoader(dev_data,
+                                                       512,
+                                                       shuffle=False,
+                                                       collate_fn=self.collate
+                                                       )
+
+            test_iterator = torch.utils.data.DataLoader(test_data,
+                                                        512,
+                                                        shuffle=False,
+                                                        collate_fn=self.collate
+                                                        )
+
+            iterator_set = {
+                'train_iterator': train_iterator,
+                'valid_iterator': dev_iterator,
+                'test_iterator': test_iterator,
+            }
+            iterators.append(iterator_set)
+
+        other_meta_data = {}
+        other_meta_data['task'] = 'supervised_domain_adaptation'
+        other_meta_data['k_fold'] = k_fold
+        other_meta_data['is_k_fold'] = True
+        other_meta_data['dataset_name'] = self.dataset_name
+
+        number_of_labels = len(np.unique(yt))
+
+
+
+        return vocab, number_of_labels, number_of_labels, iterators, other_meta_data
+
+
+
+
+
 
 class MultiGroupSenSR:
     def __init__(self, dataset_name, **params):
@@ -898,6 +996,7 @@ def create_fairness_data(train_X, train_y, train_s, dev_X, dev_y, dev_s, process
         fairness_X, fairness_y, fairness_s = dev_X[sampled_index], dev_y[sampled_index], dev_s[sampled_index]
         return process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
     elif method.lower() == 'custom_3':
+        # sample randomly from train + valid
         sampled_index = np.random.randint(total_size, size=no_examples_to_sample)
         fairness_X, fairness_y, fairness_s = np.vstack([train_X, dev_X])[sampled_index] \
             , np.hstack([train_y, dev_y])[sampled_index], np.hstack([train_s, dev_s])[sampled_index]

@@ -57,6 +57,7 @@ from typing import Optional
 @click.option('-clip_fairness', '--clip_fairness', type=bool, default=True, help="Clip fairness to max of 1.0")
 @click.option('-normalize_fairness', '--normalize_fairness', type=bool, default=False, help="normalizes fairness before multiplying with gradients.")
 @click.option('-fairness_iterator', '--fairness_iterator', type=str, default="train", help="train/custom_1/custom_2 etc.")
+@click.option('-supervised_da', '--supervised_da', type=bool, default=False, help="Does supervised domain adapatation if true.")
 def run(emb_dim:int,
          spacy_model:str,
          seed:int,
@@ -110,7 +111,8 @@ def run(emb_dim:int,
          calculate_leakage:bool,
          clip_fairness:bool,
          normalize_fairness:bool,
-         fairness_iterator:str
+         fairness_iterator:str,
+         supervised_da:bool
          ):
     main.main(emb_dim,
              spacy_model,
@@ -165,7 +167,8 @@ def run(emb_dim:int,
              calculate_leakage,
              clip_fairness,
              normalize_fairness,
-             fairness_iterator
+             fairness_iterator,
+             supervised_da
              )
 
 if __name__ == '__main__':

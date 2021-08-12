@@ -169,7 +169,8 @@ if __name__ == '__main__':
                          calculate_leakage=False,
                          clip_fairness=True,
                          normalize_fairness=True,
-                         fairness_iterator='train'
+                         fairness_iterator='train',
+                         supervised_da=False
                          )
                     logger.info(f"end of run - {unique_id}")
                 except KeyboardInterrupt:

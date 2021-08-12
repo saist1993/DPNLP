@@ -17,6 +17,7 @@ import config
 from utils.misc import *
 from models.linear import *
 from training_loops.simple_loop import training_loop as simple_training_loop
+from training_loops.simple_loop import k_fold_training_loop as k_fold_training_loop
 from training_loops.fair_grad import training_loop as fair_grad_training_loop
 from utils.fairness_functions import *
 from tokenizer_wrapper import init_tokenizer
@@ -79,7 +80,8 @@ def main(emb_dim:int,
          calculate_leakage:bool,
          clip_fairness:bool,
          normalize_fairness:bool,
-         fairness_iterator:str
+         fairness_iterator:str,
+         supervised_da:bool
          ):
     '''
         A place keep all the design choices.
@@ -112,7 +114,7 @@ def main(emb_dim:int,
     elif "adult_multigroup_sensr" in dataset_name:
         logger.info(f"model chossen amazon model")
         model_arch_params = config.simple_classification_dataset_model # don't need this expressive model. Simplify it!
-    elif "adult"  in dataset_name or "dutch" in dataset_name or "encoded_emoji":
+    elif "adult"  in dataset_name or "dutch" in dataset_name or "encoded_emoji" or "celeb" in dataset_name :
         logger.info(f"model chossen adult model")
         model_arch_params = config.simple_classification_dataset_model  # don't need this expressive model. Simplify it!
 
@@ -149,7 +151,8 @@ def main(emb_dim:int,
         'trim_data': trim_data,
         'sample_specific_class': sample_specific_class,
         'fairness_iterator': fairness_iterator,
-        'fair_grad': fair_grad # Needs a larger validation split.
+        'fair_grad': fair_grad, # Needs a larger validation split.
+        'supervised_da': supervised_da
     }
     vocab, number_of_labels, number_of_aux_labels, iterators, other_data_metadata = \
         generate_data_iterators(dataset_name=dataset_name, **iterator_params)
@@ -203,6 +206,7 @@ def main(emb_dim:int,
     # More stuff related to word embedding needs to be added here.
     model = model.to(device)
 
+    opt_name = copy.copy(optimizer)
     # choosing the optimization function.
     if optimizer.lower() == 'adagrad':
         opt_fn = partial(torch.optim.Adagrad)
@@ -213,6 +217,8 @@ def main(emb_dim:int,
     else:
         raise CustomError("no optimizer selected")
     optimizer = make_opt(model, opt_fn, lr=lr)
+
+
 
     # setup
     if use_lr_schedule:
@@ -282,37 +288,51 @@ def main(emb_dim:int,
         'calculate_leakage': calculate_leakage,
         'dataset': dataset_name,
         'clip_fairness': clip_fairness,
-        'normalize_fairness': normalize_fairness
+        'normalize_fairness': normalize_fairness,
+        'opt_name': opt_name,
+        'lr': lr
     }
 
 
-    for iterator in iterators:
-        if fair_grad:
-            best_test_acc, best_valid_acc, test_acc_at_best_valid_acc = fair_grad_training_loop(
-                n_epochs=epochs,
-                model=model,
-                iterator=iterator,
-                optimizer=optimizer,
-                criterion=criterion,
-                device=device,
-                model_save_name=model_save_name,
-                accuracy_calculation_function=accuracy_calculation_function,
-                wandb=wandb,
-                other_params=training_loop_params
-            )
-        else:
-            best_test_acc, best_valid_acc, test_acc_at_best_valid_acc  = simple_training_loop(
-                n_epochs=epochs,
-                model=model,
-                iterator=iterator,
-                optimizer=optimizer,
-                criterion=criterion,
-                device=device,
-                model_save_name=model_save_name,
-                accuracy_calculation_function=accuracy_calculation_function,
-                wandb=wandb,
-                other_params=training_loop_params
-            )
+    if fair_grad:
+        best_test_acc, best_valid_acc, test_acc_at_best_valid_acc = fair_grad_training_loop(
+            n_epochs=epochs,
+            model=model,
+            iterator=iterators[0],
+            optimizer=optimizer,
+            criterion=criterion,
+            device=device,
+            model_save_name=model_save_name,
+            accuracy_calculation_function=accuracy_calculation_function,
+            wandb=wandb,
+            other_params=training_loop_params
+        )
+    elif supervised_da:
+        best_test_acc, best_valid_acc, test_acc_at_best_valid_acc = k_fold_training_loop(
+            n_epochs=epochs,
+            model=model,
+            iterator=iterators,
+            optimizer=optimizer,
+            criterion=criterion,
+            device=device,
+            model_save_name=model_save_name,
+            accuracy_calculation_function=accuracy_calculation_function,
+            wandb=wandb,
+            other_params=training_loop_params
+        )
+    else:
+        best_test_acc, best_valid_acc, test_acc_at_best_valid_acc  = simple_training_loop(
+            n_epochs=epochs,
+            model=model,
+            iterator=iterators[0],
+            optimizer=optimizer,
+            criterion=criterion,
+            device=device,
+            model_save_name=model_save_name,
+            accuracy_calculation_function=accuracy_calculation_function,
+            wandb=wandb,
+            other_params=training_loop_params
+        )
 
         print(f"BEST Test Acc: {best_test_acc} ||"
               f" Actual Test Acc: {test_acc_at_best_valid_acc} || Best Valid Acc {best_valid_acc}")
