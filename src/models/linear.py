@@ -156,6 +156,7 @@ class LinearAdv(nn.Module):
             params['input'], params['gradient_reversal']
 
         original_hidden = self.encoder(params)
+        copy_original_hidden = original_hidden.clone().detach()
 
         if self.noise_layer:
             m = torch.distributions.laplace.Laplace(torch.tensor([0.0]), torch.tensor([laplace(self.eps, 2)]))
@@ -169,11 +170,12 @@ class LinearAdv(nn.Module):
         _params['input'] = hidden
         prediction = self.classifier(_params)
 
+        # new_hidden = torch.cat((hidden, copy_original_hidden),1)
         # adversarial setup
         if gradient_reversal:
-            _params['input'] = GradReverse.apply(hidden)
+            _params['input'] = GradReverse.apply(copy_original_hidden)
         else:
-            _params['input'] = hidden
+            _params['input'] = copy_original_hidden
         adv_output = self.adv(_params)
 
         #

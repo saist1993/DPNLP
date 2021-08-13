@@ -377,7 +377,8 @@ def k_fold_training_loop(n_epochs:int,
         wandb,
         other_params):
 
-    fold_accuracy = []
+    fold_test_accuracy = []
+    fold_valid_accuracy = []
     # original_model = copy.copy(model)
     for index, iter in enumerate(iterator):
 
@@ -414,11 +415,14 @@ def k_fold_training_loop(n_epochs:int,
         criterion, device, model_save_name, accuracy_calculation_function, wandb, other_params)
         logger.info(f"fold acc for {index} is {test_acc_at_best_valid_acc}, and other info {best_test_acc}, {best_valid_acc}")
         print(f"fold acc for {index} is {test_acc_at_best_valid_acc}, and other info {best_test_acc}, {best_valid_acc}")
-        fold_accuracy.append(test_acc_at_best_valid_acc)
+        fold_test_accuracy.append(test_acc_at_best_valid_acc)
+        fold_valid_accuracy.append(best_valid_acc)
         logger.info(f"end fold {index}")
         model.reset()
 
-    final_acc = np.mean(fold_accuracy)
-    print(f"and the final acc is {final_acc}")
+    final_test_acc = np.mean(fold_test_accuracy)
+    final_valid_acc = np.mean(fold_valid_accuracy)
+    print(f"and the final test acc is {final_test_acc} and valid acc is {final_valid_acc}")
+    logger.info(f"and the final test acc is {final_test_acc} and valid acc is {final_valid_acc}")
 
-    return 0.0, 0.0, final_acc
+    return 0.0, 0.0, final_test_acc

@@ -45,34 +45,7 @@ if __name__ == '__main__':
     assert args.dataset_name != None
     assert args.epochs != None
 
-    # create main logging dir
-    logs_dir = Path('../logs')
-    create_dir(logs_dir)
 
-    # create dataset dir in logs_dir
-    dataset_dir = logs_dir / Path(args.dataset_name)
-    create_dir(dataset_dir)
-    log_file_name = str(dataset_dir / Path(args.log_name)) + '.log'
-
-    # logger init
-    logging.basicConfig(filename=log_file_name,
-                        filemode='a',
-                        format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                        datefmt='%H:%M:%S',
-                        level=logging.DEBUG)
-
-    logging.info(f"logging for {log_file_name}")
-    logger = logging.getLogger('main')
-
-    # define a Handler which writes INFO messages or higher to the sys.stderr
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    # set a format which is simpler for console use
-    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-    # tell the handler to use this format
-    console.setFormatter(formatter)
-    # add the handler to the root logger
-    logging.getLogger().addHandler(console)
 
     # setting up the run
     epochs = args.epochs
@@ -85,6 +58,8 @@ if __name__ == '__main__':
     # optimizer = 'sgd'
     use_lr_schedule = str2bool(args.use_lr_schedule)
     seed = args.seed
+
+    supervised_da = False
 
 
 
@@ -107,8 +82,42 @@ if __name__ == '__main__':
         fairness_score_function = 'calculate_multiple_things_blog'
     elif "amazon" in dataset_name:
         fairness_score_function = 'dummy_fairness'
+        if len(dataset_name.split("_")) == 2:
+            supervised_da = True
     else:
         fairness_score_function = 'multiple_things'
+
+    # create main logging dir
+    logs_dir = Path('../logs')
+    create_dir(logs_dir)
+
+    # create dataset dir in logs_dir
+    if supervised_da:
+        dataset_dir = logs_dir / Path(args.dataset_name + '_supervised_da')
+    else:
+        dataset_dir = logs_dir / Path(args.dataset_name)
+    create_dir(dataset_dir)
+    log_file_name = str(dataset_dir / Path(args.log_name)) + '.log'
+
+    # logger init
+    logging.basicConfig(filename=log_file_name,
+                        filemode='a',
+                        format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                        datefmt='%H:%M:%S',
+                        level=logging.DEBUG)
+
+    logging.info(f"logging for {log_file_name}")
+    logger = logging.getLogger('main')
+
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger().addHandler(console)
 
     for eps in epss:
         for adv_scale in adv_scales:
@@ -170,7 +179,7 @@ if __name__ == '__main__':
                          clip_fairness=True,
                          normalize_fairness=True,
                          fairness_iterator='train',
-                         supervised_da=False
+                         supervised_da=supervised_da
                          )
                     logger.info(f"end of run - {unique_id}")
                 except KeyboardInterrupt:

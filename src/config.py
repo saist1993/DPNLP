@@ -44,7 +44,7 @@ amazon_model = {  # this will need more work!!
         'output_dim': -1,  # This needs to be set
         'number_of_layers': 2,  # needs to be len(hidden) + 1
         'dropout': 0.4,
-        'input_dim': 100  # This needs to be set
+        'input_dim': 100 # This needs to be set
     }
 }
 
