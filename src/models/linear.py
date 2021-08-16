@@ -175,14 +175,14 @@ class LinearAdv(nn.Module):
         # adversarial setup
         if self.apply_noise_to_adv:
             if gradient_reversal:
-                _params['input'] = GradReverse.apply(copy_original_hidden)
-            else:
-                _params['input'] = copy_original_hidden
-        else:
-            if gradient_reversal:
                 _params['input'] = GradReverse.apply(hidden)
             else:
                 _params['input'] = hidden
+        else:
+            if gradient_reversal:
+                _params['input'] = GradReverse.apply(copy_original_hidden)
+            else:
+                _params['input'] = copy_original_hidden
 
         adv_output = self.adv(_params)
 
