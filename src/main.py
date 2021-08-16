@@ -189,7 +189,7 @@ def main(emb_dim:int,
         model_params = {
             'input_dim': input_dim,
             'output_dim': output_dim,
-            'apply_noise_to_adv': apply_noise_to_adv
+
         }
 
         model_arch = model_arch_params
@@ -200,7 +200,8 @@ def main(emb_dim:int,
             'model_arch': model_arch,
             'noise_layer': noise_layer,
             'eps': eps,
-            'device': device
+            'device': device,
+            'apply_noise_to_adv': apply_noise_to_adv
         }
 
         model = LinearAdv(model_params)
