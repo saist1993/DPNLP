@@ -149,6 +149,7 @@ class LinearAdv(nn.Module):
         self.encoder.apply(initialize_parameters)  # don't know, if this is needed.
         self.eps = params['eps']
         self.device = params['device']
+        self.apply_noise_to_adv = params['apply_noise_to_adv']
 
     def forward(self, params):
 
@@ -172,10 +173,17 @@ class LinearAdv(nn.Module):
 
         # new_hidden = torch.cat((hidden, copy_original_hidden),1)
         # adversarial setup
-        if gradient_reversal:
-            _params['input'] = GradReverse.apply(copy_original_hidden)
+        if self.apply_noise_to_adv:
+            if gradient_reversal:
+                _params['input'] = GradReverse.apply(copy_original_hidden)
+            else:
+                _params['input'] = copy_original_hidden
         else:
-            _params['input'] = copy_original_hidden
+            if gradient_reversal:
+                _params['input'] = GradReverse.apply(hidden)
+            else:
+                _params['input'] = hidden
+
         adv_output = self.adv(_params)
 
         #

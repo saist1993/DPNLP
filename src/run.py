@@ -58,6 +58,8 @@ from typing import Optional
 @click.option('-normalize_fairness', '--normalize_fairness', type=bool, default=False, help="normalizes fairness before multiplying with gradients.")
 @click.option('-fairness_iterator', '--fairness_iterator', type=str, default="train", help="train/custom_1/custom_2 etc.")
 @click.option('-supervised_da', '--supervised_da', type=bool, default=False, help="Does supervised domain adapatation if true.")
+@click.option('-supervised_da', '--supervised_da', type=bool, default=False, help="Does supervised domain adapatation if true.")
+@click.option('-apply_noise_to_adv', '--apply_noise_to_adv', type=bool, default=True, help="if true; noise is applied to both adv and classifier else only classifier")
 def run(emb_dim:int,
          spacy_model:str,
          seed:int,
@@ -112,7 +114,8 @@ def run(emb_dim:int,
          clip_fairness:bool,
          normalize_fairness:bool,
          fairness_iterator:str,
-         supervised_da:bool
+         supervised_da:bool,
+         apply_noise_to_adv:bool
          ):
     main.main(emb_dim,
              spacy_model,
@@ -168,7 +171,8 @@ def run(emb_dim:int,
              clip_fairness,
              normalize_fairness,
              fairness_iterator,
-             supervised_da
+             supervised_da,
+             apply_noise_to_adv
              )
 
 if __name__ == '__main__':

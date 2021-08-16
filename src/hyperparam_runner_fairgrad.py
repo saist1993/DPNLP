@@ -158,7 +158,8 @@ if __name__ == '__main__':
                                  clip_fairness=fair_clip,
                                  normalize_fairness=fair_norm,
                                  fairness_iterator=fairness_iterator,
-                                 supervised_da=False
+                                 supervised_da=False,
+                                 apply_noise_to_adv=False
                                  )
                             logger.info(f"end of run - {unique_id}")
                         except KeyboardInterrupt:

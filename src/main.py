@@ -81,7 +81,8 @@ def main(emb_dim:int,
          clip_fairness:bool,
          normalize_fairness:bool,
          fairness_iterator:str,
-         supervised_da:bool
+         supervised_da:bool,
+         apply_noise_to_adv:bool
          ):
     '''
         A place keep all the design choices.
@@ -290,7 +291,8 @@ def main(emb_dim:int,
         'clip_fairness': clip_fairness,
         'normalize_fairness': normalize_fairness,
         'opt_name': opt_name,
-        'lr': lr
+        'lr': lr,
+        'apply_noise_to_adv': apply_noise_to_adv
     }
 
 

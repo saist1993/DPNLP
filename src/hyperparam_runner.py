@@ -179,7 +179,8 @@ if __name__ == '__main__':
                          clip_fairness=True,
                          normalize_fairness=True,
                          fairness_iterator='train',
-                         supervised_da=supervised_da
+                         supervised_da=supervised_da,
+                         apply_noise_to_adv=False
                          )
                     logger.info(f"end of run - {unique_id}")
                 except KeyboardInterrupt:
