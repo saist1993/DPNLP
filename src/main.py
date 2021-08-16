@@ -189,6 +189,7 @@ def main(emb_dim:int,
         model_params = {
             'input_dim': input_dim,
             'output_dim': output_dim,
+            'apply_noise_to_adv': apply_noise_to_adv
         }
 
         model_arch = model_arch_params
