@@ -31,6 +31,7 @@ if __name__ == '__main__':
 
 
     parser.add_argument('--is_adv', '-is_adv', help="True for using adv; else false (default).", type=str)
+    parser.add_argument('--apply_noise_to_adv', '-apply_noise_to_adv', help="True noise on adv else no noise on adv", type=str)
     parser.add_argument('--adv_start', '-adv_s', help="start of adv scale for increment increase for ex: 0.1", type=float)
     parser.add_argument('--adv_end', '-adv_e', help="end of adv scale 1.0", type=float)
     parser.add_argument('--epochs', '-epochs', help="epochs!", type=int)
@@ -60,6 +61,7 @@ if __name__ == '__main__':
     seed = args.seed
 
     supervised_da = False
+    apply_noise_to_adv = str2bool(args.apply_noise_to_adv)
 
 
 
@@ -180,7 +182,7 @@ if __name__ == '__main__':
                          normalize_fairness=True,
                          fairness_iterator='train',
                          supervised_da=supervised_da,
-                         apply_noise_to_adv=False
+                         apply_noise_to_adv=apply_noise_to_adv
                          )
                     logger.info(f"end of run - {unique_id}")
                 except KeyboardInterrupt:
