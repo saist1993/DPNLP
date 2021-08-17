@@ -28,8 +28,8 @@ if __name__ == '__main__':
     parser.add_argument('--use_lr_schedule', '-use_lr_schedule', help="use_lr_schedule!", type=str)
     parser.add_argument('--fairness_iterator', '-fairness_iterator', nargs="*", help="--fairness_iterator custom_1 custom_2 custom_3 train", type=str)
     parser.add_argument('--seed', '-seed', help="1234", type=int)
-    # parser.add_argument('--use_clipping', '-use_clipping', help="employs clipping!", type=str)
-    # parser.add_argument('--use_normalization', '-use_normalization', help="employs normalization", type=str)
+    parser.add_argument('--use_clipping', '-use_clipping', help="employs clipping!", type=str)
+    parser.add_argument('--use_normalization', '-use_normalization', help="employs normalization", type=str)
     # parser.add_argument('--fairness_iterator', '-fairness_iterator', help="the type of fairness iterator to use", type=str)
     # parser.add_argument('--fairness_function', '-fairness_function', help="demographic_parity/equal_opportunity/equal_odds", type=str)
 
@@ -75,16 +75,23 @@ if __name__ == '__main__':
     epochs = args.epochs
     dataset_name = args.dataset_name
     use_lr_schedule = str2bool(args.use_lr_schedule)
-    # use_clipping = str2bool(args.use_clipping)
-    # use_normalization =  str2bool(args.use_normalization)
+    if args.use_clipping:
+        fairness_clippings = [str2bool(args.use_clipping)]
+    else:
+        fairness_clippings = [True, False]
+
+    if args.use_normalization:
+        fairness_normalizations =  [str2bool(args.use_normalization)]
+    else:
+        fairness_normalizations = [True, False]
     # fairness_iterator = args.fairness_iterator
     # fairness_function = args.fairness_function
     # fairness_score_function = fairness_function
 
     lrs = [('adam', 0.001)]
 
-    fairness_clippings = [True, False]
-    fairness_normalizations = [True, False]
+    # fairness_clippings = [True, False]
+    # fairness_normalizations = [True, False]
     fairness_functions = ['demographic_parity', 'equal_opportunity']
     # fairness_iterators = ['train', 'custom_1']
 

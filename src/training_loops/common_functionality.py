@@ -1,6 +1,9 @@
 import torch
 from tqdm.auto import tqdm
 from sklearn.svm import LinearSVC
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import SGDClassifier
+from sklearn.preprocessing import StandardScaler
 
 def calculate_fairness_stuff(all_preds, y, s, fairness_score_function, device, other_metadata=None):
     """this need a lot more information. We need to pass along more data for doing several stuff."""
@@ -72,6 +75,12 @@ def calculate_leakage(train_preds, train_labels, test_preds, test_labels, method
         biased_classifier = LinearSVC(fit_intercept=True, class_weight='balanced', dual=False, C=0.1, max_iter=10000)
         biased_classifier.fit(train_preds, train_labels) # remember aux labels
         leakage = biased_classifier.score(test_preds, test_labels) # remember aux labels
+        return leakage
+    elif method == 'sgd':
+        biased_classifier = SGDClassifier(max_iter=1000, tol=1e-3)
+        clf = make_pipeline(StandardScaler(), biased_classifier)
+        clf.fit(train_preds, train_labels) # remember aux labels
+        leakage = clf.score(test_preds, test_labels) # remember aux labels
         return leakage
     else:
         raise NotImplementedError

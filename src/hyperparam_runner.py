@@ -89,6 +89,10 @@ if __name__ == '__main__':
     else:
         fairness_score_function = 'multiple_things'
 
+    if dataset_name == 'encoded_emoji':
+        calculate_leakage = True
+    else:
+        calculate_leakage = False
     # create main logging dir
     logs_dir = Path('../logs')
     create_dir(logs_dir)
@@ -177,7 +181,7 @@ if __name__ == '__main__':
                          fairness_function='demographic_parity',
                          fairness_score_function=fairness_score_function,
                          sample_specific_class=True,
-                         calculate_leakage=False,
+                         calculate_leakage=calculate_leakage,
                          clip_fairness=True,
                          normalize_fairness=True,
                          fairness_iterator='train',

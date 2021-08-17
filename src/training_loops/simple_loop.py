@@ -105,7 +105,7 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
     # works same as train loop with few exceptions. It does have code repetation
     model.eval()
 
-    all_preds, all_hidden = [], []
+    all_preds, all_hidden, raw_all_preds = [], [], []
     y,all_s = [], []
 
     # tracking stuff
@@ -147,6 +147,7 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
                 if is_adv:
                     loss_aux = criterion(output['adv_output'], items['aux'])
 
+            raw_all_preds.append(output['prediction'].detach().cpu().numpy())
             all_preds.append(output['prediction'].argmax(1))
             all_hidden.append(output['hidden'].detach().cpu().numpy())
             y.append(items['labels'])
@@ -176,6 +177,7 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
         all_s = torch.cat(all_s, out=torch.Tensor(len(all_s), all_s[0].shape[0])).to(device)
         # all_hidden = torch.cat(all_hidden, out=torch.Tensor(len(all_hidden), all_hidden[0].shape[0]))
         all_hidden = np.row_stack(all_hidden)
+        raw_all_preds = np.row_stack(raw_all_preds)
         extra_info = {}
         if "adult_multigroup_sensr" in other_params['dataset_metadata']['dataset_name']:
             # a hack for passing more info specifically for adult multigroup sensr
@@ -198,7 +200,8 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
         other_data = {
             'all_hidden': all_hidden,
             'all_s': all_s,
-            'all_preds': all_preds
+            'all_preds': all_preds,
+            'raw_all_preds': raw_all_preds
         }
 
 
@@ -243,6 +246,7 @@ def training_loop( n_epochs:int,
     total_epochs = n_epochs # this needs to be thought in more depth
 
     dataset = other_params["dataset"]
+    get_leakage = other_params["calculate_leakage"]
 
     if other_params['is_adv']:
         other_params['gradient_reversal'] = True
@@ -323,6 +327,32 @@ def training_loop( n_epochs:int,
 
         logger.info(f"valid dict: {val_output}")
         logger.info(f"test dict: {test_output}")
+
+        if get_leakage:
+            leaks = {}
+            train_preds = val_other_data['all_hidden']
+            test_preds = test_other_data['all_hidden']
+            train_labels = val_other_data['all_s']
+            test_labels = test_other_data['all_s']
+            leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='svm')
+            leaks['encoder_svm'] = leakage
+            logging.info(f'hidden leakage at encoder representation with svm method is {leakage}')
+            leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='sgd')
+            leaks['encoder_sgd'] = leakage
+            logging.info(f'hidden leakage at encoder representation with sgd method is {leakage}')
+
+            train_preds = val_other_data['raw_all_preds']
+            test_preds = test_other_data['raw_all_preds']
+            train_labels = val_other_data['all_s']
+            test_labels = test_other_data['all_s']
+            leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='svm')
+            leaks['preds_svm'] = leakage
+            logging.info(f'hidden leakage at final preds representation with svm method is {leakage}')
+            leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='sgd')
+            leaks['preds_sgd'] = leakage
+            logging.info(f'hidden leakage at final preds  representation with sgd method is {leakage}')
+            logging.info(f"leakage dict: {leaks}")
+            print(f"leakage dict: {leaks}")
 
         # calculate leakage - still need to be implemented.
         # @TODO: Complete the implementation of the leakge.
