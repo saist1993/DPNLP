@@ -107,8 +107,8 @@ def transform_chunk_to_datapoint(chunk, arguments, uuid):
             test_dict = {key.replace("test_", ""): value for key, value in
                          ast.literal_eval(c.split("dict:")[1].strip()).items()}
 
-        if 'attacker data:' in c:
-            attacker_dict = ast.literal_eval(c.split("data:")[1].strip())
+        if 'leakage dict:' in c:
+            attacker_dict = ast.literal_eval(c.split("dict:")[1].strip())
     #         print(valid_dict)
     return DataPoint(arguments, [valid_dict, test_dict], attacker_dict, uuid)
 
@@ -149,3 +149,39 @@ def get_indexes_to_pop(data):
     return indexes_to_pop
 
 
+
+def filter_data_epoch(data, epoch):
+    temp = []
+    for node in data:
+        if node.arguments['epochs'] == epoch:
+            temp.append(node)
+    return temp
+
+def filter_data_seed(data, epoch):
+    temp = []
+    for node in data:
+        if node.arguments['seed'] == epoch:
+            temp.append(node)
+    return temp
+
+def filter_noise_adv(data, noise=True, adv=True):
+    temp = []
+    for node in data:
+        if node.arguments['noise_layer'] == noise and node.arguments['is_adv'] == adv:
+            temp.append(node)
+    return temp
+
+def filter_adv(data, noise=True):
+    temp = []
+    for node in data:
+        if node.arguments['noise_layer'] == noise:
+            temp.append(node)
+    return temp
+
+
+def filter_adv(data, seed=1234):
+    temp = []
+    for node in data:
+        if node.arguments['seed'] == seed:
+            temp.append(node)
+    return temp

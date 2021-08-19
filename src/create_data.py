@@ -615,140 +615,140 @@ class SimpleAdvDatasetReader():
         return vocab, number_of_labels, number_of_labels, iterators, other_meta_data
 
 
-class EncodedDpNLP:
-    """Implements a set of dataset used by Differentially Private Representation for NLP: Formal Guarantee and An Empirical Study on Privacy and Fairness"""
-    def __init__(self, dataset_name, **params):
-        self.batch_size = params['batch_size']
-        self.dataset_name = dataset_name
-        self.fairness_iterator = params['fairness_iterator']
-        if self.dataset_name == 'blog':
-            self.index_for_s = 0
-        elif self.dataset_name == 'blog_v2':
-            self.index_for_s = 1
-        else:
-            raise NotImplementedError
-        if 'blog' in self.dataset_name: # blog dataset
-            self.file_name = [] # @TODO: find a location and save it.
-            self.file_name.append('../data/dpnlp/encoded_data/blog.pkl')
-            self.file_name.append('/home/gmaheshwari/storage/dpnlp/encoded_data/blog.pkl')
-        else:
-            raise NotImplementedError
-
-    def process_data(self, X,y,s, vocab):
-        """raw data is assumed to be tokenized"""
-        final_data = [(a,b,c) for a,b,c in zip(y,X,s)]
-
-
-        label_transform = sequential_transforms()
-        input_transform = sequential_transforms()
-        aux_transform = sequential_transforms()
-
-        transforms = (label_transform, input_transform, aux_transform)
-
-        return TextClassificationDataset(final_data, vocab, transforms)
-
-
-    def collate(self, batch):
-        labels, input, aux = zip(*batch)
-
-        labels = torch.LongTensor(labels)
-        aux = torch.LongTensor(aux)
-        lengths = torch.LongTensor([len(x) for x in input])
-        input = torch.FloatTensor(input)
-
-        input_data = {
-            'labels': labels,
-            'input': input,
-            'lengths': lengths,
-            'aux': aux
-        }
-
-        return input_data
-
-    def run(self):
-
-        try:
-            data = pickle.load(open(self.file_name[0], 'rb'))
-        except FileNotFoundError:
-            data = pickle.load(open(self.file_name[1], 'rb'))
-
-        y_train = np.asarray([int(d.label) for d in data.get_train_examples()])
-        s_train = np.asarray([int(d.aux_label[self.index_for_s]) for d in data.get_train_examples()])
-        X_train = np.asarray(data.get_train_encoding())
-
-        y_dev = np.asarray([int(d.label) for d in data.get_dev_examples()])
-        s_dev = np.asarray([int(d.aux_label[self.index_for_s]) for d in data.get_dev_examples()])
-        X_dev = np.asarray(data.get_dev_encoding())
-
-        y_test = np.asarray([int(d.label) for d in data.get_test_examples()])
-        s_test = np.asarray([int(d.aux_label[self.index_for_s]) for d in data.get_test_examples()])
-        X_test = np.asarray(data.get_test_encoding())
-
-        vocab = {'<pad>':1} # no need of vocab in these dataset. It is there for code compatibility purposes.
-        number_of_labels = len(data.get_labels())
-
-
-        # shuffling data
-        shuffle_train_index = np.random.permutation(len(X_train))
-        X_train, y_train, s_train = X_train[shuffle_train_index], y_train[shuffle_train_index], s_train[shuffle_train_index]
-
-        shuffle_dev_index = np.random.permutation(len(X_dev))
-        X_dev, y_dev, s_dev = X_dev[shuffle_dev_index], y_dev[shuffle_dev_index], s_dev[
-            shuffle_dev_index]
-
-        shuffle_test_index = np.random.permutation(len(X_test))
-        X_test, y_test, s_test = X_test[shuffle_test_index], y_test[shuffle_test_index], s_test[
-            shuffle_test_index]
-
-        train_data = self.process_data(X_train,y_train,s_train, vocab=vocab)
-        dev_data = self.process_data(X_dev,y_dev,s_dev, vocab=vocab)
-        test_data = self.process_data(X_test,y_test,s_test, vocab=vocab)
-
-        fairness_data = \
-            create_fairness_data(
-                X_train, y_train, s_train, X_dev, y_dev,
-                s_dev, self.process_data, vocab, self.fairness_iterator)
-
-
-        train_iterator = torch.utils.data.DataLoader(train_data,
-                                                     self.batch_size,
-                                                     shuffle=False,
-                                                     collate_fn=self.collate
-                                                     )
-
-        dev_iterator = torch.utils.data.DataLoader(dev_data,
-                                                   512,
-                                                   shuffle=False,
-                                                   collate_fn=self.collate
-                                                   )
-
-        test_iterator = torch.utils.data.DataLoader(test_data,
-                                                    512,
-                                                    shuffle=False,
-                                                    collate_fn=self.collate
-                                                    )
-
-        fairness_iterator = torch.utils.data.DataLoader(fairness_data,
-                                                        512,
-                                                        shuffle=False,
-                                                        collate_fn=self.collate
-                                                        )
-
-        iterators = []  # If it was k-fold. One could append k iterators here.
-        iterator_set = {
-            'train_iterator': train_iterator,
-            'valid_iterator': dev_iterator,
-            'test_iterator': test_iterator,
-            'fairness_iterator': fairness_iterator  # now this can be independent of the dev iterator.
-        }
-        iterators.append(iterator_set)
-
-        other_meta_data = {}
-        other_meta_data['task'] = 'simple_classification'
-        other_meta_data['dataset_name'] = self.dataset_name
-        other_meta_data['index_for_s'] = self.index_for_s
-
-        return vocab, number_of_labels, number_of_labels, iterators, other_meta_data
+# class EncodedDpNLP:
+#     """Implements a set of dataset used by Differentially Private Representation for NLP: Formal Guarantee and An Empirical Study on Privacy and Fairness"""
+#     def __init__(self, dataset_name, **params):
+#         self.batch_size = params['batch_size']
+#         self.dataset_name = dataset_name
+#         self.fairness_iterator = params['fairness_iterator']
+#         if self.dataset_name == 'blog':
+#             self.index_for_s = 0
+#         elif self.dataset_name == 'blog_v2':
+#             self.index_for_s = 1
+#         else:
+#             raise NotImplementedError
+#         if 'blog' in self.dataset_name: # blog dataset
+#             self.file_name = [] # @TODO: find a location and save it.
+#             self.file_name.append('../data/dpnlp/encoded_data/blog.pkl')
+#             self.file_name.append('/home/gmaheshwari/storage/dpnlp/encoded_data/blog.pkl')
+#         else:
+#             raise NotImplementedError
+#
+#     def process_data(self, X,y,s, vocab):
+#         """raw data is assumed to be tokenized"""
+#         final_data = [(a,b,c) for a,b,c in zip(y,X,s)]
+#
+#
+#         label_transform = sequential_transforms()
+#         input_transform = sequential_transforms()
+#         aux_transform = sequential_transforms()
+#
+#         transforms = (label_transform, input_transform, aux_transform)
+#
+#         return TextClassificationDataset(final_data, vocab, transforms)
+#
+#
+#     def collate(self, batch):
+#         labels, input, aux = zip(*batch)
+#
+#         labels = torch.LongTensor(labels)
+#         aux = torch.LongTensor(aux)
+#         lengths = torch.LongTensor([len(x) for x in input])
+#         input = torch.FloatTensor(input)
+#
+#         input_data = {
+#             'labels': labels,
+#             'input': input,
+#             'lengths': lengths,
+#             'aux': aux
+#         }
+#
+#         return input_data
+#
+#     def run(self):
+#
+#         try:
+#             data = pickle.load(open(self.file_name[0], 'rb'))
+#         except FileNotFoundError:
+#             data = pickle.load(open(self.file_name[1], 'rb'))
+#
+#         y_train = np.asarray([int(d.label) for d in data.get_train_examples()])
+#         s_train = np.asarray([int(d.aux_label[self.index_for_s]) for d in data.get_train_examples()])
+#         X_train = np.asarray(data.get_train_encoding())
+#
+#         y_dev = np.asarray([int(d.label) for d in data.get_dev_examples()])
+#         s_dev = np.asarray([int(d.aux_label[self.index_for_s]) for d in data.get_dev_examples()])
+#         X_dev = np.asarray(data.get_dev_encoding())
+#
+#         y_test = np.asarray([int(d.label) for d in data.get_test_examples()])
+#         s_test = np.asarray([int(d.aux_label[self.index_for_s]) for d in data.get_test_examples()])
+#         X_test = np.asarray(data.get_test_encoding())
+#
+#         vocab = {'<pad>':1} # no need of vocab in these dataset. It is there for code compatibility purposes.
+#         number_of_labels = len(data.get_labels())
+#
+#
+#         # shuffling data
+#         shuffle_train_index = np.random.permutation(len(X_train))
+#         X_train, y_train, s_train = X_train[shuffle_train_index], y_train[shuffle_train_index], s_train[shuffle_train_index]
+#
+#         shuffle_dev_index = np.random.permutation(len(X_dev))
+#         X_dev, y_dev, s_dev = X_dev[shuffle_dev_index], y_dev[shuffle_dev_index], s_dev[
+#             shuffle_dev_index]
+#
+#         shuffle_test_index = np.random.permutation(len(X_test))
+#         X_test, y_test, s_test = X_test[shuffle_test_index], y_test[shuffle_test_index], s_test[
+#             shuffle_test_index]
+#
+#         train_data = self.process_data(X_train,y_train,s_train, vocab=vocab)
+#         dev_data = self.process_data(X_dev,y_dev,s_dev, vocab=vocab)
+#         test_data = self.process_data(X_test,y_test,s_test, vocab=vocab)
+#
+#         fairness_data = \
+#             create_fairness_data(
+#                 X_train, y_train, s_train, X_dev, y_dev,
+#                 s_dev, self.process_data, vocab, self.fairness_iterator)
+#
+#
+#         train_iterator = torch.utils.data.DataLoader(train_data,
+#                                                      self.batch_size,
+#                                                      shuffle=False,
+#                                                      collate_fn=self.collate
+#                                                      )
+#
+#         dev_iterator = torch.utils.data.DataLoader(dev_data,
+#                                                    512,
+#                                                    shuffle=False,
+#                                                    collate_fn=self.collate
+#                                                    )
+#
+#         test_iterator = torch.utils.data.DataLoader(test_data,
+#                                                     512,
+#                                                     shuffle=False,
+#                                                     collate_fn=self.collate
+#                                                     )
+#
+#         fairness_iterator = torch.utils.data.DataLoader(fairness_data,
+#                                                         512,
+#                                                         shuffle=False,
+#                                                         collate_fn=self.collate
+#                                                         )
+#
+#         iterators = []  # If it was k-fold. One could append k iterators here.
+#         iterator_set = {
+#             'train_iterator': train_iterator,
+#             'valid_iterator': dev_iterator,
+#             'test_iterator': test_iterator,
+#             'fairness_iterator': fairness_iterator  # now this can be independent of the dev iterator.
+#         }
+#         iterators.append(iterator_set)
+#
+#         other_meta_data = {}
+#         other_meta_data['task'] = 'simple_classification'
+#         other_meta_data['dataset_name'] = self.dataset_name
+#         other_meta_data['index_for_s'] = self.index_for_s
+#
+#         return vocab, number_of_labels, number_of_labels, iterators, other_meta_data
 
 class EncodedEmoji:
     def __init__(self, dataset_name, **params):
@@ -922,6 +922,145 @@ class EncodedEmoji:
         other_meta_data['dataset_name'] = self.dataset_name
 
         return vocab, number_of_labels, number_of_labels, iterators, other_meta_data
+
+
+class EncodedDpNLP:
+    """Implements a set of dataset used by Differentially Private Representation for NLP: Formal Guarantee and An Empirical Study on Privacy and Fairness"""
+    def __init__(self, dataset_name, **params):
+        self.batch_size = params['batch_size']
+        self.dataset_name = dataset_name
+        if self.dataset_name == 'blog':
+            self.index_for_s = 0
+        elif self.dataset_name == 'blog_v2':
+            self.index_for_s = 1
+        else:
+            raise NotImplementedError
+        if 'blog' in self.dataset_name: # blog dataset
+            self.file_name = [] # @TODO: find a location and save it.
+            self.file_name.append('../datasets/dpnlp/encoded_data/blog.pkl')
+            self.file_name.append('/home/gmaheshwari/storage/dpnlp/encoded_data/blog.pkl')
+        else:
+            raise NotImplementedError
+
+        self.fairness_iterator = params['fairness_iterator']
+
+    def process_data(self, X,y,s, vocab):
+        """raw data is assumed to be tokenized"""
+        final_data = [(a,b,c) for a,b,c in zip(y,X,s)]
+
+
+        label_transform = sequential_transforms()
+        input_transform = sequential_transforms()
+        aux_transform = sequential_transforms()
+
+        transforms = (label_transform, input_transform, aux_transform)
+
+        return TextClassificationDataset(final_data, vocab, transforms)
+
+
+    def collate(self, batch):
+        labels, input, aux = zip(*batch)
+
+        labels = torch.LongTensor(labels)
+        aux = torch.LongTensor(aux)
+        lengths = torch.LongTensor([len(x) for x in input])
+        input = torch.FloatTensor(input)
+
+        input_data = {
+            'labels': labels,
+            'input': input,
+            'lengths': lengths,
+            'aux': aux
+        }
+
+        return input_data
+
+    def run(self):
+
+        try:
+            data = pickle.load(open(self.file_name[0], 'rb'))
+        except FileNotFoundError:
+            data = pickle.load(open(self.file_name[1], 'rb'))
+
+        y_train = np.asarray([int(d.label) for d in data.get_train_examples()])
+        s_train = np.asarray([int(d.aux_label[self.index_for_s]) for d in data.get_train_examples()])
+        X_train = np.asarray(data.get_train_encoding())
+
+        y_dev = np.asarray([int(d.label) for d in data.get_dev_examples()])
+        s_dev = np.asarray([int(d.aux_label[self.index_for_s]) for d in data.get_dev_examples()])
+        X_dev = np.asarray(data.get_dev_encoding())
+
+        y_test = np.asarray([int(d.label) for d in data.get_test_examples()])
+        s_test = np.asarray([int(d.aux_label[self.index_for_s]) for d in data.get_test_examples()])
+        X_test = np.asarray(data.get_test_encoding())
+
+        vocab = {'<pad>':1} # no need of vocab in these dataset. It is there for code compatibility purposes.
+        number_of_labels = len(data.get_labels())
+
+
+        # shuffling data
+        shuffle_train_index = np.random.permutation(len(X_train))
+        X_train, y_train, s_train = X_train[shuffle_train_index], y_train[shuffle_train_index], s_train[shuffle_train_index]
+
+        shuffle_dev_index = np.random.permutation(len(X_dev))
+        X_dev, y_dev, s_dev = X_dev[shuffle_dev_index], y_dev[shuffle_dev_index], s_dev[
+            shuffle_dev_index]
+
+        shuffle_test_index = np.random.permutation(len(X_test))
+        X_test, y_test, s_test = X_test[shuffle_test_index], y_test[shuffle_test_index], s_test[
+            shuffle_test_index]
+
+        train_data = self.process_data(X_train,y_train,s_train, vocab=vocab)
+        dev_data = self.process_data(X_dev,y_dev,s_dev, vocab=vocab)
+        test_data = self.process_data(X_test,y_test,s_test, vocab=vocab)
+
+        fairness_data = \
+            create_fairness_data(
+                X_train, y_train, s_train, X_dev, y_dev,
+                s_dev, self.process_data, vocab, self.fairness_iterator)
+
+
+        train_iterator = torch.utils.data.DataLoader(train_data,
+                                                     self.batch_size,
+                                                     shuffle=False,
+                                                     collate_fn=self.collate
+                                                     )
+
+        dev_iterator = torch.utils.data.DataLoader(dev_data,
+                                                   512,
+                                                   shuffle=False,
+                                                   collate_fn=self.collate
+                                                   )
+
+        test_iterator = torch.utils.data.DataLoader(test_data,
+                                                    512,
+                                                    shuffle=False,
+                                                    collate_fn=self.collate
+                                                    )
+
+        fairness_iterator = torch.utils.data.DataLoader(fairness_data,
+                                                        512,
+                                                        shuffle=False,
+                                                        collate_fn=self.collate
+                                                        )
+
+        iterators = []  # If it was k-fold. One could append k iterators here.
+        iterator_set = {
+            'train_iterator': train_iterator,
+            'valid_iterator': dev_iterator,
+            'test_iterator': test_iterator,
+            'fairness_iterator': fairness_iterator  # now this can be independent of the dev iterator.
+        }
+        iterators.append(iterator_set)
+
+        other_meta_data = {}
+        other_meta_data['task'] = 'simple_classification'
+        other_meta_data['dataset_name'] = self.dataset_name
+        other_meta_data['index_for_s'] = self.index_for_s
+
+        return vocab, number_of_labels, number_of_labels, iterators, other_meta_data
+
+
 
 def generate_data_iterators(dataset_name:str, **kwargs):
 

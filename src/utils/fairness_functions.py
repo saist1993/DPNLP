@@ -241,6 +241,43 @@ def calculate_grms(preds, y, s, other_params=None):
 
     return [np.sqrt(np.mean(scores))], group_fairness
 
+def calculate_per_class_acc_difference(preds, y, s, other_params=None):
+    unique_classes = torch.sort(torch.unique(y))[0]  # For example: [doctor, nurse, engineer]
+    unique_groups = torch.sort(torch.unique(s))[0]  # For example: [Male, Female]
+    group_fairness = {}  # a dict which keeps a track on how fairness is changing
+
+    '''
+    it will have a structure of 
+    {
+        'doctor': {
+            'm' : 0.5, 
+            'f' : 0.6
+            }, 
+        'model': {
+        'm': 0.5,
+        'f': 0.7,
+        }
+    '''
+    for uc in unique_classes:  # iterating over each class say: uc=doctor for the first iteration
+        group_fairness[uc] = {}
+        positive_rate = torch.mean((preds[y == uc] == uc).float())  # prob(pred=doctor/y=doctor)
+        for group in unique_groups:  # iterating over each group say: group=male for the firt iteration
+            mask_pos = torch.logical_and(y == uc, s == group)  # find instances with y=doctor and s=male
+            g_fairness_pos = torch.mean((preds[mask_pos] == uc).float())
+            temp = g_fairness_pos.item()
+            if math.isnan(temp):
+                temp = 0.0
+            group_fairness[uc][group] = temp
+        group_fairness[uc]['total_acc'] = positive_rate
+
+    scores = []
+    for key,value in group_fairness.items():
+        temp = [value_1 for key_1, value_1 in value.items()]
+        gender_1, gender_2 = temp[0], temp[1]
+        scores.append((gender_1-gender_2)**2)
+
+    return [np.sqrt(np.mean(scores))], group_fairness
+
 
 def calculate_acc_diff(preds, y, s, other_params=None):
     # unique_classes = torch.sort(torch.unique(y))[0]  # For example: [doctor, nurse, engineer]
@@ -457,6 +494,7 @@ def get_false_positive_rate(y_predicted, y_true):
     y_true: numpy array
         The true class labels of shape=(number_points,).
     Returns
+    Returns
     ---------
     tpr: float
         The true positive rate.
@@ -492,7 +530,7 @@ def calculate_multiple_things_blog(preds, y, s, other_params):
     """
     do something here. Find ones which are useful and bunch them together to form easy dict
     """
-    grms_score, grms_group_fairness = calculate_grms(preds, y, s, other_params)
+    grms_score, grms_group_fairness = calculate_per_class_acc_difference(preds, y, s, other_params)
     acc_diff_scores, acc_diff_all_acc = calculate_acc_diff(preds, y, s, other_params)
 
     scores = {

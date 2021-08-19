@@ -115,9 +115,15 @@ def main(emb_dim:int,
     elif "adult_multigroup_sensr" in dataset_name:
         logger.info(f"model chossen amazon model")
         model_arch_params = config.simple_classification_dataset_model # don't need this expressive model. Simplify it!
-    elif "adult"  in dataset_name or "dutch" in dataset_name or "encoded_emoji" or "celeb" in dataset_name :
+    elif "adult"  in dataset_name or "dutch" in dataset_name or "encoded_emoji" in dataset_name or "celeb" in dataset_name:
         logger.info(f"model chossen adult model")
+        print(f"model chossen adult model")
         model_arch_params = config.simple_classification_dataset_model  # don't need this expressive model. Simplify it!
+        assert supervised_da == False
+    elif "blog" in dataset_name:
+        logger.info(f"model chossen blog model")
+        print(f"model chossen blog model")
+        model_arch_params = config.simple_classification_dataset_model_blog  # don't need this expressive model. Simplify it!
         assert supervised_da == False
 
     # setting up seeds for reproducibility
