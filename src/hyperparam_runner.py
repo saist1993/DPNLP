@@ -89,7 +89,7 @@ if __name__ == '__main__':
     else:
         fairness_score_function = 'multiple_things'
 
-    if dataset_name == 'encoded_emoji':
+    if dataset_name == 'encoded_emoji' or 'blog' in dataset_name:
         calculate_leakage = True
     else:
         calculate_leakage = False
