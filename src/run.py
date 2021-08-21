@@ -60,6 +60,7 @@ from typing import Optional
 @click.option('-supervised_da', '--supervised_da', type=bool, default=False, help="Does supervised domain adapatation if true.")
 @click.option('-supervised_da', '--supervised_da', type=bool, default=False, help="Does supervised domain adapatation if true.")
 @click.option('-apply_noise_to_adv', '--apply_noise_to_adv', type=bool, default=True, help="if true; noise is applied to both adv and classifier else only classifier")
+
 def run(emb_dim:int,
          spacy_model:str,
          seed:int,

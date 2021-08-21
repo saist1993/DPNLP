@@ -74,7 +74,10 @@ if __name__ == '__main__':
         epss = [0.0]
 
     if is_adv:
-        adv_scales = [round(i,2) for i in np.arange(args.adv_start,args.adv_end,0.1)]
+        if args.adv_end == 0.0:
+            adv_scales = args.adv_start
+        else:
+            adv_scales = [round(i,2) for i in np.arange(args.adv_start,args.adv_end,0.1)]
     else:
         adv_scales = [0.0]
 
