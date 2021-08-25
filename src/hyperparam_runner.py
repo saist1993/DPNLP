@@ -89,6 +89,8 @@ if __name__ == '__main__':
         fairness_score_function = 'dummy_fairness'
         if len(dataset_name.split("_")) == 2:
             supervised_da = True
+    elif "encoded_bias_in_bios" == dataset_name:
+        fairness_score_function = 'grms'
     else:
         fairness_score_function = 'multiple_things'
 
