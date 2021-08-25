@@ -70,6 +70,65 @@ def encode_text(model, data):
     return np.array(all_data_avg), np.array(all_data_cls)
 
 
+from itertools import zip_longest
+
+def grouper(iterable, n, fillvalue=None):
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=fillvalue)
+
+def batch_tokenize(tokenizer, data, batch_size):
+    """
+    Uses batch tokenizer to create batches of the dataset, instead of just one sentences at a time.
+    :param data:
+    :return:
+    """
+
+    batched_and_tokenized = []
+
+    sentences = [d['hard_text'] for d in data]
+
+    # break the sentences into batches
+    batches = grouper(sentences,batch_size)
+
+    # from the last batch remove None!
+    for batch in tqdm(batches):
+        # remove none
+        batch = [i for i in batch if i is not None]
+        batched_and_tokenized.append(tokenizer(batch, padding=True, truncation=True, return_tensors="pt"))
+
+    return batched_and_tokenized
+
+
+def masked_mean(vals: torch.Tensor, mask: torch.Tensor):
+    """ vals (bs, sl, hdim), mask: (bs, sl) """
+    seqlens = torch.sum(mask, dim=1).unsqueeze(1)   # (bs,1)
+    masked_vals = vals * mask.unsqueeze(-1)
+    return torch.sum(masked_vals, dim=1) / seqlens
+
+def encode_text_batch(model, data, device):
+    """
+    encode the text
+    :param model: encoding model
+    :param data: data
+    :return: two numpy matrices of the data:
+                first: average of all tokens in each sentence
+                second: cls token of each sentence
+    """
+    all_data_cls = []
+    all_data_avg = []
+    for batch in tqdm(tokens):
+        batch = {k: v.to(device) for k, v in batch.items()}
+        with torch.no_grad():
+            last_hidden_states = model(**batch).last_hidden_state
+            #
+
+            all_data_avg.append(masked_mean(last_hidden_states, batch['attention_mask']).detach().cpu().numpy())
+            all_data_cls.append(last_hidden_states[:,0,:].detach().cpu().numpy())
+    return np.vstack(all_data_avg), np.vstack(all_data_cls)
+
+
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_file', '-in_file', help="input file with exact path", type=str)
@@ -84,10 +143,11 @@ if __name__ == '__main__':
     data = read_data_file(in_file/split)
 
     print("tokenizing the text")
-    tokens = tokenize(tokenizer, data)
+    # tokens = tokenize(tokenizer, data)
+    tokens = batch_tokenize(tokenizer, data)
 
     print("encoding the text")
-    avg_data, cls_data = encode_text(model, tokens)
+    avg_data, cls_data = encode_text_batch(model, tokens)
 
     print("saving the text")
     np.save(in_file/ Path(f'{str(split)}_bert_avg.npy'), avg_data)
