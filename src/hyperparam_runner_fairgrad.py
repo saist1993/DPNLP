@@ -140,7 +140,7 @@ if __name__ == '__main__':
                         for fairness_function in fairness_functions:
                             for fairness_iterator in fairness_iterators:
                                 unique_id = str(uuid.uuid4())
-                                if dataset_name == 'encoded_emoji':
+                                if dataset_name == 'encoded_emoji' and fair_grad:
                                     if fairness_function == 'demographic_parity':
                                         epochs = 30
                                     else:
