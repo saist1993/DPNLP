@@ -120,7 +120,7 @@ def main(emb_dim:int,
         print(f"model chossen adult model")
         model_arch_params = config.simple_classification_dataset_model  # don't need this expressive model. Simplify it!
         assert supervised_da == False
-    elif "blog" in dataset_name:
+    elif "blog" in dataset_name or "encoded_bias_in_bios" in dataset_name:
         logger.info(f"model chossen blog model")
         print(f"model chossen blog model")
         model_arch_params = config.simple_classification_dataset_model_blog  # don't need this expressive model. Simplify it!
