@@ -140,6 +140,13 @@ if __name__ == '__main__':
                         for fairness_function in fairness_functions:
                             for fairness_iterator in fairness_iterators:
                                 unique_id = str(uuid.uuid4())
+                                if dataset_name == 'encoded_emoji':
+                                    if fairness_function == 'demographic_parity':
+                                        epochs = 30
+                                    else:
+                                        epochs = 10
+                                else:
+                                    epochs = args.epochs
                                 try:
                                     logger.info(f"start of run - {unique_id}")
                                     main(emb_dim=300,
