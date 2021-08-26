@@ -541,6 +541,10 @@ print(clf.fit((P.dot(x_train.T)).T, y_train))
 
 print(f"first acc to: {clf.score((P.dot(x_test.T)).T, y_test)}")
 
+
+p2i = {profession: index for index, profession in enumerate(all_profession)}
+i2p = {value:key for key, value in p2i.items()}
+
 y_pred_before = clf_original.predict(x_test)
 test_gender = [d["g"] for d in test]
 tprs_before, tprs_change_before, mean_ratio_before = get_TPR(y_pred_before, y_test, p2i, i2p, test_gender)
