@@ -4,6 +4,7 @@ from sklearn.svm import LinearSVC
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
 
 def calculate_fairness_stuff(all_preds, y, s, fairness_score_function, device, other_metadata=None):
     """this need a lot more information. We need to pass along more data for doing several stuff."""
@@ -78,6 +79,12 @@ def calculate_leakage(train_preds, train_labels, test_preds, test_labels, method
         return leakage
     elif method == 'sgd':
         biased_classifier = SGDClassifier(max_iter=1000, tol=1e-3)
+        clf = make_pipeline(StandardScaler(), biased_classifier)
+        clf.fit(train_preds, train_labels) # remember aux labels
+        leakage = clf.score(test_preds, test_labels) # remember aux labels
+        return leakage
+    elif method == 'neural_network':
+        biased_classifier = MLPClassifier(alpha=1, max_iter=1000)
         clf = make_pipeline(StandardScaler(), biased_classifier)
         clf.fit(train_preds, train_labels) # remember aux labels
         leakage = clf.score(test_preds, test_labels) # remember aux labels

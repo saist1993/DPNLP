@@ -63,12 +63,14 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
             loss_main = criterion(output['prediction'], items['labels'])
             if is_adv:
                 loss_aux = criterion(output['adv_output'], items['aux'])
+                # loss_aux_second = criterion(output['second_adv_output'], items['aux'])
 
 
         acc_main = accuracy_calculation_function(output['prediction'], items['labels'])
         if is_adv:
             acc_aux = accuracy_calculation_function(output['adv_output'], items['aux'])
-            total_loss = loss_main + (loss_aux_scale * loss_aux)
+            # total_loss = loss_main + loss_aux_scale * loss_aux + loss_aux_second*loss_aux_scale
+            total_loss = loss_main + loss_aux_scale * loss_aux
         else:
             total_loss = loss_main
             loss_aux = torch.tensor(0.0)
@@ -340,6 +342,10 @@ def training_loop( n_epochs:int,
             leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='sgd')
             leaks['encoder_sgd'] = leakage
             logging.info(f'hidden leakage at encoder representation with sgd method is {leakage}')
+
+            leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='neural_network')
+            leaks['encoder_neural_network'] = leakage
+            logging.info(f'hidden leakage at encoder representation with neural network method is {leakage}')
 
             train_preds = val_other_data['raw_all_preds']
             test_preds = test_other_data['raw_all_preds']
