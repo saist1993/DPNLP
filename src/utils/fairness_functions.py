@@ -239,7 +239,7 @@ def calculate_grms(preds, y, s, other_params=None):
         gender_1, gender_2 = temp[0], temp[1]
         scores.append((gender_1-gender_2)**2)
 
-    return [np.sqrt(np.mean(scores))], group_fairness
+    return [np.sqrt(np.mean(scores))], {}
 
 def calculate_per_class_acc_difference(preds, y, s, other_params=None):
     unique_classes = torch.sort(torch.unique(y))[0]  # For example: [doctor, nurse, engineer]
