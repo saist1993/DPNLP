@@ -181,7 +181,7 @@ def main(emb_dim:int,
 
 
     output_dim = number_of_labels
-    adv_output_dim = 4 # set this up automatically
+    adv_output_dim = 2 # set this up automatically
     if len(vocab) > 10: # it is text and not just feature vector
         input_dim = len(vocab)
     else:

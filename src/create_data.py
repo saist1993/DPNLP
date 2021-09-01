@@ -633,6 +633,10 @@ class EncodedBiasInBios():
                 self.train_cls, self.dev_cls, self.test_cls = np.load(d/Path('train.pickle_bert_cls.npy')), \
                                                   np.load(d/Path('dev.pickle_bert_cls.npy')), \
                                                   np.load(d/Path('test.pickle_bert_cls.npy'))
+
+                # self.train_cls, self.dev_cls, self.test_cls = np.load(d / Path('debiased_x_train.npy')), \
+                #                                               np.load(d / Path('debiased_x_dev.npy')), \
+                #                                               np.load(d / Path('debiased_x_test.npy'))
                 break
             except FileNotFoundError:
                 continue
@@ -676,7 +680,9 @@ class EncodedBiasInBios():
     def run(self):
 
         all_profession = list(set([t['p'] for t in self.train]))
-        profession_to_id = {profession: index for index, profession in enumerate(all_profession)}
+        # profession_to_id = {profession: index for index, profession in enumerate(all_profession)}
+        # pickle.dump(open("../datasets/bias_in_bios/prof_to_id", "wb"), profession_to_id )
+        profession_to_id = pickle.load(open("../datasets/bias_in_bios/profession_to_id.pickle", "rb"))
 
         train_y = [profession_to_id[t['p']] for t in self.train]
         test_y = [profession_to_id[t['p']] for t in self.test]
@@ -1011,6 +1017,34 @@ class EncodedDpNLP:
         shuffle_test_index = np.random.permutation(len(X_test))
         X_test, y_test, s_test = X_test[shuffle_test_index], y_test[shuffle_test_index], s_test[
             shuffle_test_index]
+
+        if self.dataset_name == 'blog':
+
+            mask = np.logical_and(y_train == 0.0, s_train == 0.0)
+            extra_example_y,extra_example_X,extra_example_s  = [y_train[mask][0]], [X_train[mask][0]] , [s_train[mask][0]]
+
+            y_test = np.hstack([y_test, np.asarray(extra_example_y)])
+            s_test = np.hstack([s_test, np.asarray(extra_example_s)])
+            X_test = np.vstack([X_test, np.asarray(extra_example_X)])
+
+
+            y_dev = np.hstack([y_dev, np.asarray(extra_example_y)])
+            s_dev = np.hstack([s_dev , np.asarray(extra_example_s)])
+            X_dev = np.vstack([X_dev, np.asarray(extra_example_X)])
+
+            mask = np.logical_and(y_dev == 0.0, s_dev == 1.0)
+            extra_example_y, extra_example_X, extra_example_s = [y_dev[mask][0]], [X_dev[mask][0]], [s_dev[mask][0]]
+
+            y_test = np.hstack([y_test, np.asarray(extra_example_y)])
+            s_test = np.hstack([s_test, np.asarray(extra_example_s)])
+            X_test = np.vstack([X_test, np.asarray(extra_example_X)])
+
+            mask = np.logical_and(y_dev == 8.0, s_dev == 1.0)
+            extra_example_y, extra_example_X, extra_example_s = [y_dev[mask][0]], [X_dev[mask][0]], [s_dev[mask][0]]
+
+            y_test = np.hstack([y_test, np.asarray(extra_example_y)])
+            s_test = np.hstack([s_test, np.asarray(extra_example_s)])
+            X_test = np.vstack([X_test, np.asarray(extra_example_X)])
 
         train_data = self.process_data(X_train,y_train,s_train, vocab=vocab)
         dev_data = self.process_data(X_dev,y_dev,s_dev, vocab=vocab)

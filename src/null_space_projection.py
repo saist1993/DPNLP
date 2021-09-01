@@ -73,9 +73,13 @@ for d in data_location:
                                           pickle.load(open(d/Path('dev.pickle'), 'rb')),\
                                           pickle.load(open(d/Path('test.pickle'), 'rb'))
 
-        train_cls, dev_cls, test_cls = np.load(d/Path('train.pickle_bert_cls.npy')), \
-                                          np.load(d/Path('dev.pickle_bert_cls.npy')), \
-                                          np.load(d/Path('test.pickle_bert_cls.npy'))
+        # train_cls, dev_cls, test_cls = np.load(d/Path('train.pickle_bert_cls.npy')), \
+        #                                   np.load(d/Path('dev.pickle_bert_cls.npy')), \
+        #                                   np.load(d/Path('test.pickle_bert_cls.npy'))
+
+        train_cls, dev_cls, test_cls = np.load(d/Path('baseline_model_hidden_train.npy')), \
+                                          np.load(d/Path('baseline_model_hidden_dev.npy')), \
+                                          np.load(d/Path('baseline_model_hidden_test.npy'))
         break
     except FileNotFoundError:
         continue
@@ -360,7 +364,8 @@ def get_projection_matrix(num_clfs, X_train, Y_train_gender, X_dev, Y_dev_gender
     is_autoregressive = True
     min_acc = 0.
     # noise = False
-    dim = 768
+    # dim = 768
+    dim = 50
     n = num_clfs
     # random_subset = 1.0
     start = time.time()
@@ -388,7 +393,7 @@ def get_projection_matrix(num_clfs, X_train, Y_train_gender, X_dev, Y_dev_gender
     return P, rowspace_projections, Ws
 
 
-num_clfs = 300
+num_clfs = 10
 y_dev_gender = np.array(dev_s)
 y_train_gender = np.array(train_s)
 idx = np.random.rand(x_train.shape[0]) < 1.
@@ -531,7 +536,7 @@ clf = LogisticRegression(warm_start = True, penalty = 'l2',
                          solver = "sag", multi_class = 'multinomial', fit_intercept = True,
                          verbose = 10, max_iter = 3, n_jobs = 64, random_state = 1)
 #clf = SGDClassifier()
-P_rowspace = np.eye(768) - P
+P_rowspace = np.eye(50) - P
 mean_gender_vec = np.mean(P_rowspace.dot(x_train.T).T, axis = 0)
 # 2
 print(clf.fit((P.dot(x_train.T)).T, y_train))
@@ -557,7 +562,7 @@ tprs, tprs_change_after, mean_ratio_after = get_TPR(y_pred_after, y_test, p2i, i
 # similarity_vs_tpr(tprs_change_after, None, "after", "TPR", prof2fem)
 
 
-""" 
+"""     
 #print("TPR diff ratio before: {}; after: {}".format(mean_ratio_before, mean_ratio_after))
 
 fprs_before, fprs_change_before = get_FPR2(y_pred_before, y_dev, p2i, i2p, test_gender)

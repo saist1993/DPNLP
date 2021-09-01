@@ -143,10 +143,12 @@ class LinearAdv(nn.Module):
         self.encoder = Linear(params['model_arch']['encoder'])
         self.classifier = Linear(params['model_arch']['main_task_classifier'])
         self.adv = Linear(params['model_arch']['adv'])
+        # self.second_adv = Linear(params['model_arch']['adv'])
         self.noise_layer = params['noise_layer']
         self.adv.apply(initialize_parameters)  # don't know, if this is needed.
         self.classifier.apply(initialize_parameters)  # don't know, if this is needed.
         self.encoder.apply(initialize_parameters)  # don't know, if this is needed.
+        # self.second_adv.apply(initialize_parameters)
         self.eps = params['eps']
         self.device = params['device']
         self.apply_noise_to_adv = params['apply_noise_to_adv']
@@ -185,6 +187,8 @@ class LinearAdv(nn.Module):
                 _params['input'] = copy_original_hidden
 
         adv_output = self.adv(_params)
+        # _params['input'] = GradReverse.apply(copy_original_hidden)
+        # second_adv_output = self.second_adv(_params)
 
         #
         # if return_hidden:
@@ -193,7 +197,9 @@ class LinearAdv(nn.Module):
         output = {
             'prediction': prediction,
             'adv_output': adv_output,
-            'hidden': hidden
+            'hidden': hidden,
+            # 'second_adv_output': second_adv_output
+
         }
 
         return output

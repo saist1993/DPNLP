@@ -45,7 +45,7 @@ def equal_odds(preds, y, s, device, total_no_main_classes, total_no_aux_classes,
     return group_fairness, fairness_lookup
 
 
-def demographic_parity(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
+def demographic_parity_t(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
     """
     We assume y to be 0,1  that is y can only take 1 or 0 as the input.
 
@@ -84,6 +84,62 @@ def demographic_parity(preds, y, s, device, total_no_main_classes, total_no_aux_
 
         for group in unique_groups: # iterating over each group say: group=male for the firt iteration
             mask_pos = (s == group)
+            if uc == 1:
+                 # find instances with y=doctor and s=male
+                g_fairness_pos = torch.mean((preds[mask_pos] == uc).float()) - positive_rate
+                g_fairness_pos = torch.sign(g_fairness_pos) * torch.clip(torch.abs(g_fairness_pos) - epsilon, 0, None)
+            else: # uc = 0 which in our case is negative class
+                g_fairness_pos = torch.tensor(0.0).to(device) # TODO: check if g_fairness_pos in the obove if condition is of the same type
+            fairness[mask_pos] = g_fairness_pos
+            group_fairness[uc][group] = g_fairness_pos
+            fairness_lookup[int(uc.item()),int(group.item())] = g_fairness_pos
+
+
+    return group_fairness, fairness_lookup
+
+
+def demographic_parity(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
+    """
+    We assume y to be 0,1  that is y can only take 1 or 0 as the input.
+
+    y = 1 is considered to be a positive class while y=0 is considered to be a negative class. This is
+    unlike other methods where y=-1 is considered to be negative class.
+
+    In demographic parity the fairness score for class y=0 is 0.
+
+    """
+
+    unique_classes = torch.sort(torch.unique(y))[0] # For example: [doctor, nurse, engineer]
+    # assert total_no_main_classes == 2 # only valid for two classes where the negative class is assumed to be y=0
+    # assert len(unique_classes) <= 2 # as there can't be more than 2 classes
+
+    fairness = torch.zeros(s.shape).to(device)
+    unique_groups = torch.sort(torch.unique(s))[0] # For example: [Male, Female]
+    group_fairness = {} # a dict which keeps a track on how fairness is changing
+    fairness_lookup = torch.zeros([total_no_main_classes, total_no_aux_classes])
+
+      # prob(pred=doctor/y=doctor)
+
+    '''
+    it will have a structure of 
+    {
+        'doctor': {
+            'm' : 0.5, 
+            'f' : 0.6
+            }, 
+        'model': {
+        'm': 0.5,
+        'f': 0.7,
+        }
+    '''
+    for uc in unique_classes: # iterating over each class say: uc=doctor for the first iteration
+        group_fairness[uc] = {}
+        positive_rate = torch.mean((preds == 1).float())
+
+        for group in unique_groups: # iterating over each group say: group=male for the firt iteration
+            mask1 = (s == group)
+            mask2 = (y == uc)
+            mask_pos = torch.logical_and(mask1, mask2)
             if uc == 1:
                  # find instances with y=doctor and s=male
                 g_fairness_pos = torch.mean((preds[mask_pos] == uc).float()) - positive_rate
@@ -404,6 +460,33 @@ def calculate_ddp_dde(preds, y, s, other_params):
 
     return [DDP, DEO], ((abs(DDP)+abs(DEO))/2.0)
 
+
+def calculate_ddp_dde_multiclass(preds, y, s, other_params):
+
+    unique_classes = torch.sort(torch.unique(y))[0]
+    preds = preds.detach().cpu().numpy()
+    y = y.detach().cpu().numpy()
+    s = s.detach().cpu().numpy()
+    DDP, DEO = [], []
+    for uc in unique_classes:
+        mask_prot = np.logical_and(s==0.0, y==np.full_like(y,uc))
+        mask_unprot = np.logical_and(s==1.0, y==np.full_like(y,uc))
+        unique_mask_prot = np.unique(mask_prot)
+        unique_mask_unprot = np.unique(mask_unprot)
+
+        positive_rate_prot = get_positive_rate_multiclass(preds[mask_prot], y[mask_prot])
+        positive_rate_unprot = get_positive_rate_multiclass(preds[mask_unprot], y[mask_unprot])
+
+        true_positive_rate_prot = get_true_positive_rate_multiclass(preds[mask_prot], y[mask_prot])
+        true_positive_rate_unprot = get_true_positive_rate_multiclass(preds[mask_unprot], y[mask_unprot])
+        DDP.append(positive_rate_unprot - positive_rate_prot)
+        DEO.append(true_positive_rate_unprot - true_positive_rate_prot)
+
+    DDP = np.average(DDP)
+    DEO = np.average(DEO)
+
+    return [DDP, DEO], ((abs(DDP)+abs(DEO))/2.0)
+
 def calculate_diff_demographic_parity(preds, y, s, other_params):
     [DDP, DEO], _ = calculate_ddp_dde(preds, y, s, other_params)
     return DDP, {'ddp': DDP}
@@ -412,6 +495,91 @@ def calculate_diff_equal_opportunity(preds, y, s, other_params):
     [DDP, DEO], _ = calculate_ddp_dde(preds, y, s, other_params)
     return DEO, {'deo': DEO}
 
+
+
+def get_positive_rate_multiclass(y_predicted, y_true):
+    """Compute the positive rate for given predictions of the class label.
+    Parameters
+    ----------
+    y_predicted: numpy array
+        The predicted class labels of shape=(number_points,).
+    y_true: numpy array
+        The true class labels of shape=(number_points,).
+    Returns
+    ---------
+    pr: float
+        The positive rate.
+    """
+    unique_y = np.unique(y_true)
+
+    new_y_true = []
+    for s in y_true:
+        if s == unique_y:
+            new_y_true.append(1.0)
+        else:
+            new_y_true.append(0.0)
+
+    new_y_predicted = []
+    for s in y_predicted:
+        if s == unique_y:
+            new_y_predicted.append(1.0)
+        else:
+            new_y_predicted.append(0.0)
+
+    # tn, fp, fn, tp = confusion_matrix(np.asarray(new_y_true), np.asarray(new_y_predicted)).ravel()
+    x = confusion_matrix(np.asarray(new_y_true), np.asarray(new_y_predicted)).ravel()
+    if len(x) == 4:
+        tn, fp, fn, tp = x
+    elif len(x) == 1:
+        tp = x
+        fp, fn, tn = 0.0,0.0,0.0
+    else:
+        raise IOError
+    pr = (tp+fp) / (tp+fp+tn+fn)
+    return pr
+
+def get_true_positive_rate_multiclass(y_predicted, y_true):
+    """Compute the true positive rate for given predictions of the class label.
+    Parameters
+    ----------
+    y_predicted: numpy array
+        The predicted class labels of shape=(number_points,).
+    y_true: numpy array
+        The true class labels of shape=(number_points,).
+    Returns
+    ---------
+    tpr: float
+        The true positive rate.
+    """
+    unique_y = np.unique(y_true)
+
+    new_y_true = []
+    for s in y_true:
+        if s == unique_y:
+            new_y_true.append(1.0)
+        else:
+            new_y_true.append(0.0)
+
+    new_y_predicted = []
+    for s in y_predicted:
+        if s == unique_y:
+            new_y_predicted.append(1.0)
+        else:
+            new_y_predicted.append(0.0)
+
+
+    # tn, fp, fn, tp = confusion_matrix(np.asarray(new_y_true), np.asarray(new_y_predicted)).ravel()
+    x = confusion_matrix(np.asarray(new_y_true), np.asarray(new_y_predicted)).ravel()
+    if len(x) == 4:
+        tn, fp, fn, tp = x
+    elif len(x) == 1:
+        tp = x
+        fp, fn, tn = 0.0, 0.0, 0.0
+    # pr = (tp + fp) / (tp + fp + tn + fn)
+
+    tpr = tp / (tp+fn)
+    return tpr
+    # return torch.mean((y_predicted == y_true).float())
 
 
 def get_positive_rate(y_predicted, y_true):
@@ -448,6 +616,7 @@ def get_true_positive_rate(y_predicted, y_true):
     tpr = tp / (tp+fn)
     return tpr
     # return torch.mean((y_predicted == y_true).float())
+
 
 def get_true_negative_rate(y_predicted, y_true):
     """Compute the true positive rate for given predictions of the class label.
@@ -738,6 +907,8 @@ def get_fairness_score_function(fairness_score_function):
         fairness_score_function = calculate_diff_demographic_parity
     elif fairness_score_function.lower() == 'diff_equal_opportunity':
         fairness_score_function = calculate_diff_equal_opportunity
+    elif fairness_score_function.lower() == 'calculate_ddp_dde_multiclass':
+        fairness_score_function = calculate_ddp_dde_multiclass
     else:
         print("following type are supported: grms, equal_odds, demographic_parity, equal_opportunity")
         raise NotImplementedError

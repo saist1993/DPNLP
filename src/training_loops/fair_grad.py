@@ -425,6 +425,7 @@ def training_loop( n_epochs:int,
         print(f'\tTrain Loss: {train_output["epoch_total_loss"]:.3f} | Train Acc: {train_output["epoch_acc_main"]}%')
         print(f'\t Val. Loss: {val_output["epoch_total_loss"]:.3f} |  Val. Acc: {val_output["epoch_acc_main"]}%')
         print(f'\t Test Loss: {test_output["epoch_total_loss"]:.3f} |  Val. Acc: {test_output["epoch_acc_main"]}%')
+        print(f"grms: {test_output['grms']}")
 
 
         if wandb:

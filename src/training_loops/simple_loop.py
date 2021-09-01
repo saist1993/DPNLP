@@ -123,6 +123,8 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
     is_adv = other_params['is_adv'] # adv
     is_regression = other_params['is_regression']
     task = other_params['task']
+    save_model = True
+    save_grms = 0.17
     if task == 'domain_adaptation':
         assert is_adv == True
 
@@ -206,7 +208,6 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
             'raw_all_preds': raw_all_preds
         }
 
-
         return return_output, other_data
 
 
@@ -236,6 +237,7 @@ def training_loop( n_epochs:int,
     eps_scale = other_params['eps_scale']
     current_best_grms = [math.inf]
     test_acc_at_best_grms = 0.0
+    save_grms = 0.20
 
     use_lr_schedule = other_params['use_lr_schedule']
     lr_scheduler = other_params['lr_scheduler']
@@ -376,14 +378,14 @@ def training_loop( n_epochs:int,
         if val_output['epoch_total_loss'] < best_valid_loss:
             logger.info(f"model saved as: {model_save_name}")
             best_valid_loss = val_output['epoch_total_loss']
-            if save_model and save_wrt_loss:
-                torch.save(model.state_dict(), model_save_name)
+            # if save_model and save_wrt_loss:
+            #     torch.save(model.state_dict(), model_save_name)
 
         if val_output['epoch_acc_main'] > best_valid_acc:
             best_valid_acc = val_output['epoch_acc_main']
             test_acc_at_best_valid_acc = test_output['epoch_acc_main']
-            if save_model and not save_wrt_loss:
-                torch.save(model.state_dict(), model_save_name)
+            # if save_model and not save_wrt_loss:
+            #     torch.save(model.state_dict(), model_save_name)
 
         if test_output['epoch_acc_main'] > best_test_acc:
             best_test_acc = test_output['epoch_acc_main']
@@ -393,6 +395,12 @@ def training_loop( n_epochs:int,
         print(f'\t Val. Loss: {val_output["epoch_total_loss"]:.3f} |  Val. Acc: {val_output["epoch_acc_main"]}%')
         print(f'\t Test Loss: {test_output["epoch_total_loss"]:.3f} |  Val. Acc: {test_output["epoch_acc_main"]}%')
         print(f"grms: {test_output['grms']}")
+
+        if test_output['grms'][0] < save_grms:
+            torch.save(model.state_dict(), model_save_name)
+            save_grms = test_output['grms'][0]
+
+
 
 
         if wandb:
