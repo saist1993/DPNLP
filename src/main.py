@@ -115,7 +115,7 @@ def main(emb_dim:int,
     elif "adult_multigroup_sensr" in dataset_name:
         logger.info(f"model chossen amazon model")
         model_arch_params = config.simple_classification_dataset_model # don't need this expressive model. Simplify it!
-    elif "adult"  in dataset_name or "dutch" in dataset_name or "encoded_emoji" in dataset_name or "celeb" in dataset_name:
+    elif "adult"  in dataset_name or "dutch" in dataset_name or "celeb" in dataset_name:
         logger.info(f"model chossen adult model")
         print(f"model chossen adult model")
         model_arch_params = config.simple_classification_dataset_model  # don't need this expressive model. Simplify it!
@@ -124,6 +124,11 @@ def main(emb_dim:int,
         logger.info(f"model chossen blog model")
         print(f"model chossen blog model")
         model_arch_params = config.simple_classification_dataset_model_blog  # don't need this expressive model. Simplify it!
+        assert supervised_da == False
+    elif "encoded_emoji" in dataset_name:
+        logger.info(f"model chossen encoded emoji model")
+        print(f"model chossen blog model")
+        model_arch_params = config.simple_classification_dataset_model_emoji  # don't need this expressive model. Simplify it!
         assert supervised_da == False
 
     # setting up seeds for reproducibility
@@ -192,6 +197,8 @@ def main(emb_dim:int,
 
     model_name = copy.copy(model)
 
+    print("here")
+
     if model == 'linear_adv':
         model_params = {
             'input_dim': input_dim,
@@ -213,8 +220,33 @@ def main(emb_dim:int,
 
         model = LinearAdv(model_params)
 
+    elif model == 'linear_adv_encoded_emoji':
+        print("here")
+        model_params = {
+            'input_dim': input_dim,
+            'output_dim': output_dim,
+
+        }
+
+        model_arch = model_arch_params
+        model_arch['encoder']['input_dim'] = input_dim
+        model_arch['main_task_classifier']['output_dim'] = output_dim
+        model_arch['adv']['output_dim'] = adv_output_dim
+        model_params = {
+            'model_arch': model_arch,
+            'noise_layer': noise_layer,
+            'eps': eps,
+            'device': device,
+            'apply_noise_to_adv': apply_noise_to_adv
+        }
+
+        model = LinearAdvEncodedEmoji(model_params)
+        print(f"model init")
+        print("here")
+
     # More stuff related to word embedding needs to be added here.
     model = model.to(device)
+    print(f"model is moved to {device}")
 
     opt_name = copy.copy(optimizer)
     # choosing the optimization function.

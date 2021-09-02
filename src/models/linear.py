@@ -106,14 +106,18 @@ class Linear(nn.Module):
         self.fc_layers = []
         self.dropout = nn.Dropout(dropout)
 
-        for i in range(number_of_layers):
-            if i != number_of_layers - 1 and i != 0:
-                self.fc_layers.append((nn.Linear(hidden_dim[i - 1], hidden_dim[i])))
-            elif i == 0:
-                self.fc_layers.append(nn.Linear(input_dim, hidden_dim[i]))
-            else:
-                self.fc_layers.append(nn.Linear(hidden_dim[i - 1], output_dim,
-                                                bias=True))  # @TODO: see if there is a need for a softmax via sigmoid or something
+        if number_of_layers == 1:
+            self.fc_layers.append(nn.Linear(input_dim, output_dim,
+                                            bias=True))
+        else:
+            for i in range(number_of_layers):
+                if i != number_of_layers - 1 and i != 0:
+                    self.fc_layers.append((nn.Linear(hidden_dim[i - 1], hidden_dim[i])))
+                elif i == 0:
+                    self.fc_layers.append(nn.Linear(input_dim, hidden_dim[i]))
+                else:
+                    self.fc_layers.append(nn.Linear(hidden_dim[i - 1], output_dim,
+                                                    bias=True))  # @TODO: see if there is a need for a softmax via sigmoid or something
 
         self.fc_layers = nn.ModuleList(self.fc_layers)
 
@@ -215,6 +219,79 @@ class LinearAdv(nn.Module):
 
 
 
+class LinearAdvEncodedEmoji(nn.Module):
+
+    def __init__(self, params):
+        super().__init__()
+        self.encoder = Linear(params['model_arch']['encoder'])
+        self.classifier = Linear(params['model_arch']['main_task_classifier'])
+        self.adv = Linear(params['model_arch']['adv'])
+
+        # self.second_adv = Linear(params['model_arch']['adv'])
+        self.noise_layer = params['noise_layer']
+        self.adv.apply(initialize_parameters)  # don't know, if this is needed.
+        self.classifier.apply(initialize_parameters)  # don't know, if this is needed.
+        self.encoder.apply(initialize_parameters)  # don't know, if this is needed.
+
+        self.eps = params['eps']
+        self.device = params['device']
+        self.apply_noise_to_adv = params['apply_noise_to_adv']
+
+    def forward(self, params):
+
+        text, gradient_reversal = \
+            params['input'], params['gradient_reversal']
+
+        original_hidden = self.encoder(params)
+        # original_hidden = func.tanh(original_hidden)
+        # add tanh here!
+        # copy_original_hidden = original_hidden.clone().detach()
+
+        if self.noise_layer:
+            m = torch.distributions.laplace.Laplace(torch.tensor([0.0]), torch.tensor([laplace(self.eps, 2)]))
+            hidden = original_hidden / torch.norm(original_hidden, keepdim=True, dim=1)
+            hidden = hidden + m.sample(hidden.shape).squeeze().to(self.device)
+        else:
+            hidden = original_hidden
+
+        _params = {}
+        # classifier setup
+        _params['input'] = hidden
+        prediction = self.classifier(_params)
+
+        # new_hidden = torch.cat((hidden, copy_original_hidden),1)
+        # adversarial setup
+        if gradient_reversal:
+            _params['input'] = GradReverse.apply(hidden)
+        else:
+            _params['input'] = hidden
+
+        adv_output = self.adv(_params)
+        # _params['input'] = GradReverse.apply(copy_original_hidden)
+        # second_adv_output = self.second_adv(_params)
+
+        #
+        # if return_hidden:
+        #     return prediction, adv_output, original_hidden, hidden
+
+        output = {
+            'prediction': prediction,
+            'adv_output': adv_output,
+            'hidden': hidden,
+            # 'second_adv_output': second_adv_output
+
+        }
+
+        return output
+
+    @property
+    def layers(self):
+        return torch.nn.ModuleList([self.classifier, self.adv])
+
+    def reset(self):
+        self.adv.apply(initialize_parameters)  # don't know, if this is needed.
+        self.classifier.apply(initialize_parameters)  # don't know, if this is needed.
+        self.encoder.apply(initialize_parameters)  # don't know, if this is needed.
 
 
 if __name__ == '__main__':

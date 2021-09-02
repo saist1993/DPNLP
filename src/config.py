@@ -107,3 +107,64 @@ simple_classification_dataset_model_blog = {  # this will need more work!!
         'input_dim': 50  # This needs to be set
     }
 }
+
+
+
+# simple_classification_dataset_model_emoji = {  # this will need more work!!
+#
+#     'name': 'adult',  # all other classification models too. But specifically tuned for the adult right now!
+#
+#     'encoder': {
+#         'hidden_dim': [300], # need to play more with the hyper-params to figure out more appropriate complexity.
+#         'output_dim': 300,
+#         'number_of_layers': 2,  # needs to be len(hidden) + 1
+#         'dropout': 0.0,
+#         'input_dim': -1  # This needs to be set
+#     },
+#
+#     'main_task_classifier': {
+#         'hidden_dim': [],
+#         'output_dim': -1,  # This needs to be set
+#         'number_of_layers': 1,  # needs to be len(hidden) + 1
+#         'dropout': 0.0,
+#         'input_dim': 300  # This needs to be set
+#     },
+#
+#     'adv': {
+#         'hidden_dim': [256, 256],
+#         'output_dim': -1,  # This needs to be set
+#         'number_of_layers': 3,  # needs to be len(hidden) + 1
+#         'dropout': 0.0,
+#         'input_dim': 300  # This needs to be set
+#     }
+# }
+
+
+simple_classification_dataset_model_emoji = {  # this will need more work!!
+
+    'name': 'adult',  # all other classification models too. But specifically tuned for the adult right now!
+
+    'encoder': {
+        'hidden_dim': [300], # need to play more with the hyper-params to figure out more appropriate complexity.
+        'output_dim': 300,
+        'number_of_layers': 2,  # needs to be len(hidden) + 1
+        'dropout': 0.1,
+        'input_dim': -1  # This needs to be set
+    },
+
+    'main_task_classifier': {
+        'hidden_dim': [],
+        'output_dim': -1,  # This needs to be set
+        'number_of_layers': 1,  # needs to be len(hidden) + 1
+        'dropout': 0.1,
+        'input_dim': 300  # This needs to be set
+    },
+
+    'adv': {
+        'hidden_dim': [256, 256],
+        'output_dim': -1,  # This needs to be set
+        'number_of_layers': 3,  # needs to be len(hidden) + 1
+        'dropout': 0.1,
+        'input_dim': 300  # This needs to be set
+    }
+}
