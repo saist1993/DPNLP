@@ -53,7 +53,7 @@ if __name__ == '__main__':
     dataset_name = args.dataset_name
     noise_layer = str2bool(args.noise_layer)
     is_adv = str2bool(args.is_adv)
-    bs = 64
+    bs = 2000
     only_perturbate = True
     mode_of_loss_scale = args.mode_of_loss_scale # linear atleast for amazon!
     # optimizer = 'sgd'
