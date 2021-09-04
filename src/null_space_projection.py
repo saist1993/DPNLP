@@ -77,9 +77,9 @@ for d in data_location:
         #                                   np.load(d/Path('dev.pickle_bert_cls.npy')), \
         #                                   np.load(d/Path('test.pickle_bert_cls.npy'))
 
-        train_cls, dev_cls, test_cls = np.load(d/Path('baseline_model_hidden_train.npy')), \
-                                          np.load(d/Path('baseline_model_hidden_dev.npy')), \
-                                          np.load(d/Path('baseline_model_hidden_test.npy'))
+        train_cls, dev_cls, test_cls = np.load(d/Path('baseline_model_classifier_hidden_train.npy')), \
+                                          np.load(d/Path('baseline_model_classifier_hidden_dev.npy')), \
+                                          np.load(d/Path('baseline_model_classifier_hidden_test.npy'))
         break
     except FileNotFoundError:
         continue
@@ -365,7 +365,7 @@ def get_projection_matrix(num_clfs, X_train, Y_train_gender, X_dev, Y_dev_gender
     min_acc = 0.
     # noise = False
     # dim = 768
-    dim = 50
+    dim = 25
     n = num_clfs
     # random_subset = 1.0
     start = time.time()
@@ -393,7 +393,7 @@ def get_projection_matrix(num_clfs, X_train, Y_train_gender, X_dev, Y_dev_gender
     return P, rowspace_projections, Ws
 
 
-num_clfs = 10
+num_clfs = 20
 y_dev_gender = np.array(dev_s)
 y_train_gender = np.array(train_s)
 idx = np.random.rand(x_train.shape[0]) < 1.
@@ -536,7 +536,7 @@ clf = LogisticRegression(warm_start = True, penalty = 'l2',
                          solver = "sag", multi_class = 'multinomial', fit_intercept = True,
                          verbose = 10, max_iter = 3, n_jobs = 64, random_state = 1)
 #clf = SGDClassifier()
-P_rowspace = np.eye(50) - P
+P_rowspace = np.eye(25) - P
 mean_gender_vec = np.mean(P_rowspace.dot(x_train.T).T, axis = 0)
 # 2
 print(clf.fit((P.dot(x_train.T)).T, y_train))

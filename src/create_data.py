@@ -866,6 +866,15 @@ class EncodedEmoji:
         X_dev, y_dev, s_dev = np.asarray(X_dev), np.asarray(y_dev), np.asarray(s_dev)
         X_test, y_test, s_test = np.asarray(X_test), np.asarray(y_test), np.asarray(s_test)
 
+        all_x = [[a, b] for a, b in zip(y_train, s_train)]
+        new_stuff = {}
+        for i in all_x:
+            try:
+                new_stuff[str(i)] = new_stuff[str(i)] + 1
+            except:
+                new_stuff[str(i)] = 1
+
+        print(new_stuff)
 
         vocab = {'<pad>':1} # no need of vocab in these dataset. It is there for code compatibility purposes.
         number_of_labels = 2

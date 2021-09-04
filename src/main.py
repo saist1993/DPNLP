@@ -17,6 +17,7 @@ import config
 from utils.misc import *
 from models.linear import *
 from training_loops.simple_loop import training_loop as simple_training_loop
+from training_loops.diverse_adv_loop import training_loop as diverse_training_loop
 from training_loops.simple_loop import k_fold_training_loop as k_fold_training_loop
 from training_loops.fair_grad import training_loop as fair_grad_training_loop
 from utils.fairness_functions import *
@@ -364,18 +365,35 @@ def main(emb_dim:int,
             other_params=training_loop_params
         )
     else:
-        best_test_acc, best_valid_acc, test_acc_at_best_valid_acc  = simple_training_loop(
-            n_epochs=epochs,
-            model=model,
-            iterator=iterators[0],
-            optimizer=optimizer,
-            criterion=criterion,
-            device=device,
-            model_save_name=model_save_name,
-            accuracy_calculation_function=accuracy_calculation_function,
-            wandb=wandb,
-            other_params=training_loop_params
-        )
+
+        if model_name == 'linear_adv_encoded_emoji':
+
+            best_test_acc, best_valid_acc, test_acc_at_best_valid_acc  = diverse_training_loop(
+                n_epochs=epochs,
+                model=model,
+                iterator=iterators[0],
+                optimizer=optimizer,
+                criterion=criterion,
+                device=device,
+                model_save_name=model_save_name,
+                accuracy_calculation_function=accuracy_calculation_function,
+                wandb=wandb,
+                other_params=training_loop_params
+            )
+
+        else:
+            best_test_acc, best_valid_acc, test_acc_at_best_valid_acc  = simple_training_loop(
+                n_epochs=epochs,
+                model=model,
+                iterator=iterators[0],
+                optimizer=optimizer,
+                criterion=criterion,
+                device=device,
+                model_save_name=model_save_name,
+                accuracy_calculation_function=accuracy_calculation_function,
+                wandb=wandb,
+                other_params=training_loop_params
+            )
 
         print(f"BEST Test Acc: {best_test_acc} ||"
               f" Actual Test Acc: {test_acc_at_best_valid_acc} || Best Valid Acc {best_valid_acc}")

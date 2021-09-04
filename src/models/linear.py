@@ -126,13 +126,16 @@ class Linear(nn.Module):
     def forward(self, params):
         length = None  # it is a dummy input only meant for legacy
         x = params['input']
+        all_outputs = []
         for index, layer in enumerate(self.fc_layers):
             if len(self.fc_layers) - 1 != index:
                 x = self.dropout(func.relu(layer(x)))
                 # x = func.relu(layer(x))
+                all_outputs.append(x)
             else:
                 x = layer(x)
-        return x
+                all_outputs.append(x)
+        return x, all_outputs
 
     @property
     def layers(self):
@@ -162,7 +165,7 @@ class LinearAdv(nn.Module):
         text, gradient_reversal = \
             params['input'], params['gradient_reversal']
 
-        original_hidden = self.encoder(params)
+        original_hidden, encoder_other_layer_output = self.encoder(params)
         copy_original_hidden = original_hidden.clone().detach()
 
         if self.noise_layer:
@@ -175,7 +178,7 @@ class LinearAdv(nn.Module):
         _params = {}
         # classifier setup
         _params['input'] = hidden
-        prediction = self.classifier(_params)
+        prediction, classifier_hiddens = self.classifier(_params)
 
         # new_hidden = torch.cat((hidden, copy_original_hidden),1)
         # adversarial setup
@@ -190,7 +193,7 @@ class LinearAdv(nn.Module):
             else:
                 _params['input'] = copy_original_hidden
 
-        adv_output = self.adv(_params)
+        adv_output, adv_hiddens = self.adv(_params)
         # _params['input'] = GradReverse.apply(copy_original_hidden)
         # second_adv_output = self.second_adv(_params)
 
@@ -202,6 +205,8 @@ class LinearAdv(nn.Module):
             'prediction': prediction,
             'adv_output': adv_output,
             'hidden': hidden,
+            'classifier_hiddens': classifier_hiddens,
+            'adv_hiddens': adv_hiddens
             # 'second_adv_output': second_adv_output
 
         }
@@ -225,11 +230,15 @@ class LinearAdvEncodedEmoji(nn.Module):
         super().__init__()
         self.encoder = Linear(params['model_arch']['encoder'])
         self.classifier = Linear(params['model_arch']['main_task_classifier'])
-        self.adv = Linear(params['model_arch']['adv'])
+        self.adv_1 = Linear(params['model_arch']['adv'])
+        self.adv_2 = Linear(params['model_arch']['adv'])
+        self.adv_3 = Linear(params['model_arch']['adv'])
 
         # self.second_adv = Linear(params['model_arch']['adv'])
         self.noise_layer = params['noise_layer']
-        self.adv.apply(initialize_parameters)  # don't know, if this is needed.
+        self.adv_1.apply(initialize_parameters)  # don't know, if this is needed.
+        self.adv_2.apply(initialize_parameters)  # don't know, if this is needed.
+        self.adv_3.apply(initialize_parameters)  # don't know, if this is needed.
         self.classifier.apply(initialize_parameters)  # don't know, if this is needed.
         self.encoder.apply(initialize_parameters)  # don't know, if this is needed.
 
@@ -242,7 +251,7 @@ class LinearAdvEncodedEmoji(nn.Module):
         text, gradient_reversal = \
             params['input'], params['gradient_reversal']
 
-        original_hidden = self.encoder(params)
+        original_hidden, encoder_other_layer_output = self.encoder(params)
         # original_hidden = func.tanh(original_hidden)
         # add tanh here!
         # copy_original_hidden = original_hidden.clone().detach()
@@ -257,7 +266,7 @@ class LinearAdvEncodedEmoji(nn.Module):
         _params = {}
         # classifier setup
         _params['input'] = hidden
-        prediction = self.classifier(_params)
+        prediction, prediction_other_layer_output = self.classifier(_params)
 
         # new_hidden = torch.cat((hidden, copy_original_hidden),1)
         # adversarial setup
@@ -266,7 +275,9 @@ class LinearAdvEncodedEmoji(nn.Module):
         else:
             _params['input'] = hidden
 
-        adv_output = self.adv(_params)
+        adv_output_1, adv_other_layer_output_1  = self.adv_1(_params)
+        adv_output_2, adv_other_layer_output_2 = self.adv_2(_params)
+        adv_output_3, adv_other_layer_output_3 = self.adv_3(_params)
         # _params['input'] = GradReverse.apply(copy_original_hidden)
         # second_adv_output = self.second_adv(_params)
 
@@ -276,8 +287,14 @@ class LinearAdvEncodedEmoji(nn.Module):
 
         output = {
             'prediction': prediction,
-            'adv_output': adv_output,
+            # 'adv_output': adv_output,
             'hidden': hidden,
+            'adv_output_1': adv_output_1,
+            'adv_output_2': adv_output_2,
+            'adv_output_3': adv_output_3,
+            'adv_other_layer_output_1': adv_other_layer_output_1,
+            'adv_other_layer_output_2': adv_other_layer_output_2,
+            'adv_other_layer_output_3': adv_other_layer_output_3
             # 'second_adv_output': second_adv_output
 
         }
@@ -286,10 +303,12 @@ class LinearAdvEncodedEmoji(nn.Module):
 
     @property
     def layers(self):
-        return torch.nn.ModuleList([self.classifier, self.adv])
+        return torch.nn.ModuleList([self.encoder, self.classifier, self.adv_1, self.adv_2, self.adv_3 ])
 
     def reset(self):
-        self.adv.apply(initialize_parameters)  # don't know, if this is needed.
+        self.adv_1.apply(initialize_parameters)  # don't know, if this is needed.
+        self.adv_2.apply(initialize_parameters)  # don't know, if this is needed.
+        self.adv_3.apply(initialize_parameters)  # don't know, if this is needed.
         self.classifier.apply(initialize_parameters)  # don't know, if this is needed.
         self.encoder.apply(initialize_parameters)  # don't know, if this is needed.
 
