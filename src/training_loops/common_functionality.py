@@ -72,6 +72,11 @@ def calculate_lekage_old(model, dev_iterator, test_iterator, device):
     return test_hidden_leakage, test_logits_leakage
 
 def calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='svm'):
+    train_preds = train_preds.detach().cpu().numpy()
+    train_labels = train_labels.detach().cpu().numpy()
+    test_preds = test_preds.detach().cpu().numpy()
+    test_labels = test_labels.detach().cpu().numpy()
+
     if method == 'svm':
         biased_classifier = LinearSVC(fit_intercept=True, class_weight='balanced', dual=False, C=0.1, max_iter=10000)
         biased_classifier.fit(train_preds, train_labels) # remember aux labels
