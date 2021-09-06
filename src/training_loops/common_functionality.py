@@ -72,7 +72,7 @@ def calculate_lekage_old(model, dev_iterator, test_iterator, device):
     return test_hidden_leakage, test_logits_leakage
 
 def calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='svm'):
-    train_preds = train_preds.detach().cpu().numpy()
+    # train_preds = train_preds.detach().cpu().numpy()
     train_labels = train_labels.detach().cpu().numpy()
     test_preds = test_preds.detach().cpu().numpy()
     test_labels = test_labels.detach().cpu().numpy()
