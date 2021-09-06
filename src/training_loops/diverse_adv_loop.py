@@ -424,8 +424,8 @@ def training_loop( n_epochs:int,
         if val_output['epoch_acc_main'] > best_valid_acc:
             best_valid_acc = val_output['epoch_acc_main']
             test_acc_at_best_valid_acc = test_output['epoch_acc_main']
-            # if save_model and not save_wrt_loss:
-            #     torch.save(model.state_dict(), model_save_name)
+            if save_model and not save_wrt_loss:
+                torch.save(model.state_dict(), model_save_name)
 
         if test_output['epoch_acc_main'] > best_test_acc:
             best_test_acc = test_output['epoch_acc_main']

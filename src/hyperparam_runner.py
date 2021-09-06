@@ -37,7 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', '-epochs', help="epochs!", type=int)
     parser.add_argument('--use_lr_schedule', '-use_lr_schedule', help="use_lr_schedule!", type=str)
     parser.add_argument('--mode_of_loss_scale', '-mode_of_loss_scale', help="constant/linear/exp", type=str)
-    parser.add_argument('--seed', '-seed', help="1234", type=int)
+    parser.add_argument('--seed', '-seed', nargs="*", help="1234 3567 7508", type=int)
 
 
     args = parser.parse_args()
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     mode_of_loss_scale = args.mode_of_loss_scale # linear atleast for amazon!
     # optimizer = 'sgd'
     use_lr_schedule = str2bool(args.use_lr_schedule)
-    seed = args.seed
+    seeds = args.seed
 
     supervised_da = False
     apply_noise_to_adv = str2bool(args.apply_noise_to_adv)
@@ -129,78 +129,78 @@ if __name__ == '__main__':
     console.setFormatter(formatter)
     # add the handler to the root logger
     logging.getLogger().addHandler(console)
-
-    for eps in epss:
-        for adv_scale in adv_scales:
-            for optimizer, lr in lrs:
-                unique_id = str(uuid.uuid4())
-                try:
-                    logger.info(f"start of run - {unique_id}")
-                    main(emb_dim=300,
-                         spacy_model="en_core_web_sm",
-                         seed=seed,
-                         dataset_name=dataset_name,
-                         batch_size=bs,
-                         pad_token='<pad>',
-                         unk_token='<unk>',
-                         pre_trained_embeddings='../../bias-in-nlp/different_embeddings/simple_glove_vectors.vec',
-                         model_save_name='bilstm.pt',
-                         model='linear_adv_encoded_emoji',
-                         regression=False,
-                         tokenizer_type='simple',
-                         use_clean_text=True,
-                         max_length=None,
-                         epochs=epochs,
-                         learnable_embeddings=False,
-                         vocab_location=False,
-                         is_adv=is_adv,
-                         adv_loss_scale=adv_scale,
-                         use_pretrained_emb=False,
-                         default_emb_dim=300,
-                         save_test_pred=False,
-                         noise_layer=noise_layer,
-                         eps=eps,
-                         is_post_hoc=False,
-                         train_main_model=True,
-                         use_wandb=False,
-                         config_dict="",
-                         experiment_name="hyper-param-search",
-                         only_perturbate=only_perturbate,
-                         mode_of_loss_scale=mode_of_loss_scale,
-                         training_loop_type='three_phase_custom',
-                         hidden_loss=False,
-                         hidden_l1_scale=0.5,
-                         hidden_l2_scale=0.5,
-                         reset_classifier=False,
-                         reset_adv=True,
-                         encoder_learning_rate_second_phase=0.01,
-                         classifier_learning_rate_second_phase=0.01,
-                         trim_data=True,
-                         eps_scale='constant',
-                         optimizer=optimizer,
-                         lr=lr,
-                         fair_grad=False,
-                         reset_fairness=False,
-                         use_adv_dataset=True,
-                         use_lr_schedule=use_lr_schedule,
-                         fairness_function='demographic_parity',
-                         fairness_score_function=fairness_score_function,
-                         sample_specific_class=True,
-                         calculate_leakage=calculate_leakage,
-                         clip_fairness=True,
-                         normalize_fairness=True,
-                         fairness_iterator='train',
-                         supervised_da=supervised_da,
-                         apply_noise_to_adv=apply_noise_to_adv
-                         )
-                    logger.info(f"end of run - {unique_id}")
-                except KeyboardInterrupt:
-                    raise IOError
-                except Exception:
-                    error = traceback.print_exc()
-                    print(error)
-                    logger.info(error)
-                    logger.info(f"run failed for some reason - {unique_id}")
-                    logger.info(f"end of run - {unique_id}")
-                    continue
+    for seed in seeds:
+        for eps in epss:
+            for adv_scale in adv_scales:
+                for optimizer, lr in lrs:
+                    unique_id = str(uuid.uuid4())
+                    try:
+                        logger.info(f"start of run - {unique_id}")
+                        main(emb_dim=300,
+                             spacy_model="en_core_web_sm",
+                             seed=seed,
+                             dataset_name=dataset_name,
+                             batch_size=bs,
+                             pad_token='<pad>',
+                             unk_token='<unk>',
+                             pre_trained_embeddings='../../bias-in-nlp/different_embeddings/simple_glove_vectors.vec',
+                             model_save_name=Path(f'/home/gmaheshwari/storage/baseline_seed_models_encoded_emoji/baseline_{seed}.pt'),
+                             model='linear_adv_encoded_emoji',
+                             regression=False,
+                             tokenizer_type='simple',
+                             use_clean_text=True,
+                             max_length=None,
+                             epochs=epochs,
+                             learnable_embeddings=False,
+                             vocab_location=False,
+                             is_adv=is_adv,
+                             adv_loss_scale=adv_scale,
+                             use_pretrained_emb=False,
+                             default_emb_dim=300,
+                             save_test_pred=False,
+                             noise_layer=noise_layer,
+                             eps=eps,
+                             is_post_hoc=False,
+                             train_main_model=True,
+                             use_wandb=False,
+                             config_dict="",
+                             experiment_name="hyper-param-search",
+                             only_perturbate=only_perturbate,
+                             mode_of_loss_scale=mode_of_loss_scale,
+                             training_loop_type='three_phase_custom',
+                             hidden_loss=False,
+                             hidden_l1_scale=0.5,
+                             hidden_l2_scale=0.5,
+                             reset_classifier=False,
+                             reset_adv=True,
+                             encoder_learning_rate_second_phase=0.01,
+                             classifier_learning_rate_second_phase=0.01,
+                             trim_data=True,
+                             eps_scale='constant',
+                             optimizer=optimizer,
+                             lr=lr,
+                             fair_grad=False,
+                             reset_fairness=False,
+                             use_adv_dataset=True,
+                             use_lr_schedule=use_lr_schedule,
+                             fairness_function='demographic_parity',
+                             fairness_score_function=fairness_score_function,
+                             sample_specific_class=True,
+                             calculate_leakage=calculate_leakage,
+                             clip_fairness=True,
+                             normalize_fairness=True,
+                             fairness_iterator='train',
+                             supervised_da=supervised_da,
+                             apply_noise_to_adv=apply_noise_to_adv
+                             )
+                        logger.info(f"end of run - {unique_id}")
+                    except KeyboardInterrupt:
+                        raise IOError
+                    except Exception:
+                        error = traceback.print_exc()
+                        print(error)
+                        logger.info(error)
+                        logger.info(f"run failed for some reason - {unique_id}")
+                        logger.info(f"end of run - {unique_id}")
+                        continue
 
