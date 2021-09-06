@@ -74,7 +74,7 @@ def calculate_lekage_old(model, dev_iterator, test_iterator, device):
 def calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='svm'):
     # train_preds = train_preds.detach().cpu().numpy()
     train_labels = train_labels.detach().cpu().numpy()
-    test_preds = test_preds.detach().cpu().numpy()
+    # test_preds = test_preds.detach().cpu().numpy()
     test_labels = test_labels.detach().cpu().numpy()
 
     if method == 'svm':
