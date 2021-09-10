@@ -65,45 +65,7 @@ import time
 from gensim.scripts.glove2word2vec import glove2word2vec
 
 
-data_location = [Path('../datasets/bias_in_bios'), '../../../storage/fair_nlp_dataset/data/bias_in_bios']
 
-for d in data_location:
-    try:
-        train, dev, test = pickle.load(open(d/Path('train.pickle'), 'rb')),\
-                                          pickle.load(open(d/Path('dev.pickle'), 'rb')),\
-                                          pickle.load(open(d/Path('test.pickle'), 'rb'))
-
-        # train_cls, dev_cls, test_cls = np.load(d/Path('train.pickle_bert_cls.npy')), \
-        #                                   np.load(d/Path('dev.pickle_bert_cls.npy')), \
-        #                                   np.load(d/Path('test.pickle_bert_cls.npy'))
-
-        train_cls, dev_cls, test_cls = np.load(d/Path('baseline_model_classifier_hidden_train.npy')), \
-                                          np.load(d/Path('baseline_model_classifier_hidden_dev.npy')), \
-                                          np.load(d/Path('baseline_model_classifier_hidden_test.npy'))
-        break
-    except FileNotFoundError:
-        continue
-
-
-all_profession = list(set([t['p'] for t in train]))
-profession_to_id = {profession: index for index, profession in enumerate(all_profession)}
-
-train_y = [profession_to_id[t['p']] for t in train]
-test_y = [profession_to_id[t['p']] for t in test]
-dev_y = [profession_to_id[t['p']] for t in dev]
-
-# gender
-gender = {'f':0, 'm':1}
-train_s = [gender[t['g']] for t in train]
-test_s = [gender[t['g']] for t in test]
-dev_s = [gender[t['g']] for t in dev]
-
-
-number_of_labels = len(np.unique(train_y))
-
-train_X, train_y, train_s = train_cls, train_y, train_s
-dev_X, dev_y, dev_s = dev_cls, dev_y, dev_s
-test_X, test_y, test_s = test_cls, test_y, test_s
 
 
 
@@ -325,80 +287,7 @@ def get_debiasing_projection(classifier_class, cls_params: Dict, num_classifiers
 
 
 
-x_train = train_X
-x_dev = dev_X
-x_test = test_X
 
-
-
-
-y_train = np.asarray(train_y)
-y_dev = np.asarray(dev_y)
-y_test = np.asarray(test_y)
-
-random.seed(0)
-np.random.seed(0)
-
-clf = LogisticRegression(warm_start=True, penalty='l2',
-                         solver="saga", multi_class='multinomial', fit_intercept=False,
-                         verbose=5, n_jobs=90, random_state=1, max_iter=7)
-
-# params = {'}
-# clf = SGDClassifier(loss= 'hinge', max_iter = 4000, fit_intercept= True, class_weight= None, n_jobs= 100)
-
-
-start = time.time()
-idx = np.random.rand(x_train.shape[0]) < 1.0
-clf.fit(x_train[idx], y_train[idx])
-print("time: {}".format(time.time() - start))
-print(clf.score(x_test, y_test))
-print(clf.score(x_train, y_train))
-
-import copy
-clf_original = copy.deepcopy(clf)
-
-MLP = False
-
-
-def get_projection_matrix(num_clfs, X_train, Y_train_gender, X_dev, Y_dev_gender, Y_train_task, Y_dev_task, dim):
-    is_autoregressive = True
-    min_acc = 0.
-    # noise = False
-    # dim = 768
-    dim = 25
-    n = num_clfs
-    # random_subset = 1.0
-    start = time.time()
-    TYPE = "svm"
-
-    if MLP:
-        x_train_gender = np.matmul(x_train, clf.coefs_[0]) + clf.intercepts_[0]
-        x_dev_gender = np.matmul(x_dev, clf.coefs_[0]) + clf.intercepts_[0]
-    else:
-        x_train_gender = x_train.copy()
-        x_dev_gender = x_dev.copy()
-
-    if TYPE == "sgd":
-        gender_clf = SGDClassifier
-        params = {'loss': 'hinge', 'penalty': 'l2', 'fit_intercept': False, 'class_weight': None, 'n_jobs': 32}
-    else:
-        gender_clf = LinearSVC
-        params = {'penalty': 'l2', 'C': 0.01, 'fit_intercept': True, 'class_weight': None, "dual": False}
-
-    P, rowspace_projections, Ws = get_debiasing_projection(gender_clf, params, n, dim, is_autoregressive, min_acc,
-                                                           X_train, Y_train_gender, X_dev, Y_dev_gender,
-                                                           Y_train_main=Y_train_task, Y_dev_main=Y_dev_task,
-                                                           by_class=True)
-    print("time: {}".format(time.time() - start))
-    return P, rowspace_projections, Ws
-
-
-num_clfs = 20
-y_dev_gender = np.array(dev_s)
-y_train_gender = np.array(train_s)
-idx = np.random.rand(x_train.shape[0]) < 1.
-P, rowspace_projections, Ws = get_projection_matrix(num_clfs, x_train[idx], y_train_gender[idx], x_dev, y_dev_gender,
-                                                    y_train, y_dev, 300)
 
 
 def get_TPR(y_pred, y_true, p2i, i2p, gender):
@@ -532,52 +421,168 @@ def save_vecs_and_words(vecs, words):
 
 
 
-clf = LogisticRegression(warm_start = True, penalty = 'l2',
-                         solver = "sag", multi_class = 'multinomial', fit_intercept = True,
-                         verbose = 10, max_iter = 3, n_jobs = 64, random_state = 1)
-#clf = SGDClassifier()
-P_rowspace = np.eye(25) - P
-mean_gender_vec = np.mean(P_rowspace.dot(x_train.T).T, axis = 0)
-# 2
-print(clf.fit((P.dot(x_train.T)).T, y_train))
-#print(clf.fit((x_train.T).T + mean_gender_vec, y_train))
+def get_projection_matrix(num_clfs, X_train, Y_train_gender, X_dev, Y_dev_gender, Y_train_task, Y_dev_task, dim):
+    is_autoregressive = True
+    min_acc = 0.
+    # noise = False
+    # dim = 768
+    dim = 300
+    n = num_clfs
+    # random_subset = 1.0
+    start = time.time()
+    TYPE = "svm"
+    MLP = False
+
+    # if MLP:
+    #     x_train_gender = np.matmul(x_train, clf.coefs_[0]) + clf.intercepts_[0]
+    #     x_dev_gender = np.matmul(x_dev, clf.coefs_[0]) + clf.intercepts_[0]
+    # else:
+    #     x_train_gender = x_train.copy()
+    #     x_dev_gender = x_dev.copy()
+
+    if TYPE == "sgd":
+        gender_clf = SGDClassifier
+        params = {'loss': 'hinge', 'penalty': 'l2', 'fit_intercept': False, 'class_weight': None, 'n_jobs': 32}
+    else:
+        gender_clf = LinearSVC
+        params = {'penalty': 'l2', 'C': 0.01, 'fit_intercept': True, 'class_weight': None, "dual": False}
+
+    P, rowspace_projections, Ws = get_debiasing_projection(gender_clf, params, n, dim, is_autoregressive, min_acc,
+                                                           X_train, Y_train_gender, X_dev, Y_dev_gender,
+                                                           Y_train_main=Y_train_task, Y_dev_main=Y_dev_task,
+                                                           by_class=True)
+    print("time: {}".format(time.time() - start))
+    return P, rowspace_projections, Ws
+
+if __name__ == '__main__':
+
+    data_location = [Path('../datasets/bias_in_bios'), '../../../storage/fair_nlp_dataset/data/bias_in_bios']
+
+    for d in data_location:
+        try:
+            train, dev, test = pickle.load(open(d / Path('train.pickle'), 'rb')), \
+                               pickle.load(open(d / Path('dev.pickle'), 'rb')), \
+                               pickle.load(open(d / Path('test.pickle'), 'rb'))
+
+            # train_cls, dev_cls, test_cls = np.load(d/Path('train.pickle_bert_cls.npy')), \
+            #                                   np.load(d/Path('dev.pickle_bert_cls.npy')), \
+            #                                   np.load(d/Path('test.pickle_bert_cls.npy'))
+
+            train_cls, dev_cls, test_cls = np.load(d / Path('baseline_model_classifier_hidden_train.npy')), \
+                                           np.load(d / Path('baseline_model_classifier_hidden_dev.npy')), \
+                                           np.load(d / Path('baseline_model_classifier_hidden_test.npy'))
+            break
+        except FileNotFoundError:
+            continue
+
+    all_profession = list(set([t['p'] for t in train]))
+    profession_to_id = {profession: index for index, profession in enumerate(all_profession)}
+
+    train_y = [profession_to_id[t['p']] for t in train]
+    test_y = [profession_to_id[t['p']] for t in test]
+    dev_y = [profession_to_id[t['p']] for t in dev]
+
+    # gender
+    gender = {'f': 0, 'm': 1}
+    train_s = [gender[t['g']] for t in train]
+    test_s = [gender[t['g']] for t in test]
+    dev_s = [gender[t['g']] for t in dev]
+
+    number_of_labels = len(np.unique(train_y))
+
+    train_X, train_y, train_s = train_cls, train_y, train_s
+    dev_X, dev_y, dev_s = dev_cls, dev_y, dev_s
+    test_X, test_y, test_s = test_cls, test_y, test_s
 
 
 
-print(f"first acc to: {clf.score((P.dot(x_test.T)).T, y_test)}")
+    x_train = train_X
+    x_dev = dev_X
+    x_test = test_X
+
+    y_train = np.asarray(train_y)
+    y_dev = np.asarray(dev_y)
+    y_test = np.asarray(test_y)
+
+    random.seed(0)
+    np.random.seed(0)
+
+    clf = LogisticRegression(warm_start=True, penalty='l2',
+                             solver="saga", multi_class='multinomial', fit_intercept=False,
+                             verbose=5, n_jobs=90, random_state=1, max_iter=7)
+
+    # params = {'}
+    # clf = SGDClassifier(loss= 'hinge', max_iter = 4000, fit_intercept= True, class_weight= None, n_jobs= 100)
+
+    start = time.time()
+    idx = np.random.rand(x_train.shape[0]) < 1.0
+    clf.fit(x_train[idx], y_train[idx])
+    print("time: {}".format(time.time() - start))
+    print(clf.score(x_test, y_test))
+    print(clf.score(x_train, y_train))
+
+    import copy
+
+    clf_original = copy.deepcopy(clf)
+
+    MLP = False
 
 
-p2i = {profession: index for index, profession in enumerate(all_profession)}
-i2p = {value:key for key, value in p2i.items()}
-
-y_pred_before = clf_original.predict(x_test)
-test_gender = [d["g"] for d in test]
-tprs_before, tprs_change_before, mean_ratio_before = get_TPR(y_pred_before, y_test, p2i, i2p, test_gender)
-# similarity_vs_tpr(tprs_change_before, None, "before", "TPR", prof2fem)
 
 
-y_pred_after = clf.predict((P.dot(x_test.T)).T)
-# y_pred_after = clf.predict(X_test)
-tprs, tprs_change_after, mean_ratio_after = get_TPR(y_pred_after, y_test, p2i, i2p, test_gender)
-# similarity_vs_tpr(tprs_change_after, None, "after", "TPR", prof2fem)
+
+    num_clfs = 20
+    y_dev_gender = np.array(dev_s)
+    y_train_gender = np.array(train_s)
+    idx = np.random.rand(x_train.shape[0]) < 1.
+    P, rowspace_projections, Ws = get_projection_matrix(num_clfs, x_train[idx], y_train_gender[idx], x_dev,
+                                                        y_dev_gender,
+                                                        y_train, y_dev, 300)
+
+    clf = LogisticRegression(warm_start=True, penalty='l2',
+                             solver="sag", multi_class='multinomial', fit_intercept=True,
+                             verbose=10, max_iter=3, n_jobs=64, random_state=1)
+    # clf = SGDClassifier()
+    P_rowspace = np.eye(25) - P
+    mean_gender_vec = np.mean(P_rowspace.dot(x_train.T).T, axis=0)
+    # 2
+    print(clf.fit((P.dot(x_train.T)).T, y_train))
+    # print(clf.fit((x_train.T).T + mean_gender_vec, y_train))
+
+    print(f"first acc to: {clf.score((P.dot(x_test.T)).T, y_test)}")
+
+    p2i = {profession: index for index, profession in enumerate(all_profession)}
+    i2p = {value: key for key, value in p2i.items()}
+
+    y_pred_before = clf_original.predict(x_test)
+    test_gender = [d["g"] for d in test]
+    tprs_before, tprs_change_before, mean_ratio_before = get_TPR(y_pred_before, y_test, p2i, i2p, test_gender)
+    # similarity_vs_tpr(tprs_change_before, None, "before", "TPR", prof2fem)
+
+    y_pred_after = clf.predict((P.dot(x_test.T)).T)
+    # y_pred_after = clf.predict(X_test)
+    tprs, tprs_change_after, mean_ratio_after = get_TPR(y_pred_after, y_test, p2i, i2p, test_gender)
+    # similarity_vs_tpr(tprs_change_after, None, "after", "TPR", prof2fem)
+
+    """     
+    #print("TPR diff ratio before: {}; after: {}".format(mean_ratio_before, mean_ratio_after))
+
+    fprs_before, fprs_change_before = get_FPR2(y_pred_before, y_dev, p2i, i2p, test_gender)
+    similarity_vs_tpr(fprs_change_before, None, "before", "FPR", prof2fem)
 
 
-"""     
-#print("TPR diff ratio before: {}; after: {}".format(mean_ratio_before, mean_ratio_after))
+    fprs, fprs_change_after = get_FPR2(y_pred_after, y_dev, p2i, i2p, test_gender)
+    similarity_vs_tpr(fprs_change_after, None, "after", "FPR", prof2fem)
 
-fprs_before, fprs_change_before = get_FPR2(y_pred_before, y_dev, p2i, i2p, test_gender)
-similarity_vs_tpr(fprs_change_before, None, "before", "FPR", prof2fem)
+    #print("TPR diff ratio before: {}; after: {}".format(mean_ratio_before, mean_ratio_after))
+    """
+    change_vals_before = np.array(list((tprs_change_before.values())))
+    change_vals_after = np.array(list(tprs_change_after.values()))
+
+    print("rms-diff before: {}; rms-diff after: {}".format(rms_diff(change_vals_before), rms_diff(change_vals_after)))
 
 
-fprs, fprs_change_after = get_FPR2(y_pred_after, y_dev, p2i, i2p, test_gender)
-similarity_vs_tpr(fprs_change_after, None, "after", "FPR", prof2fem)
 
-#print("TPR diff ratio before: {}; after: {}".format(mean_ratio_before, mean_ratio_after))
-"""
-change_vals_before = np.array(list((tprs_change_before.values())))
-change_vals_after = np.array(list(tprs_change_after.values()))
-
-print("rms-diff before: {}; rms-diff after: {}".format(rms_diff(change_vals_before), rms_diff(change_vals_after)))
 
 
 

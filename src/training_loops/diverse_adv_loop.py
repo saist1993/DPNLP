@@ -109,7 +109,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
             acc_aux = accuracy_calculation_function(output['adv_output_1'], items['aux'])
             # total_loss = loss_main + loss_aux_scale * loss_aux + loss_aux_second*loss_aux_scale
             loss_aux = loss_aux_scale * (loss_aux_1 + loss_aux_2 + loss_aux_3) + \
-                         0.5 * (loss_aux_1_2 + loss_aux_1_3)
+                         0.9 * (loss_aux_1_2 + loss_aux_1_3)
             total_loss = loss_main + loss_aux
         else:
             total_loss = loss_main

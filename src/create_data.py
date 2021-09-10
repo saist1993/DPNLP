@@ -1165,7 +1165,7 @@ def create_fairness_data_old(train_X, train_y, train_s, dev_X, dev_y, dev_s, pro
 
 
 def create_fairness_data(train_X, train_y, train_s, dev_X, dev_y, dev_s, process_data, vocab, method):
-    sampling_percentage = .20
+    sampling_percentage = .01
     total_size = train_X.shape[0] + dev_X.shape[0]
     no_examples_to_sample = int(total_size*sampling_percentage)
     # assert dev_X.shape[0] >= no_examples_to_sample
