@@ -46,7 +46,7 @@ from typing import Optional
 @click.option('-eps_scale', '--eps_scale', type=str, default="constant", help="constant/linear. The way eps should decrease with iteration.")
 @click.option('-optimizer', '--optimizer', type=str, default="adam", help="only works when adv is True")
 @click.option('-lr', '--lr', type=float, default=0.01, help="main optimizer lr")
-@click.option('-fair_grad', '--fair_grad', type=bool, default=False, help="implements the fair sgd and training loop")
+@click.option('-fair_grad_newer', '--fair_grad_newer', type=bool, default=False, help="implements the fair sgd and training loop")
 @click.option('-reset_fairness', '--reset_fairness', type=bool, default=False, help="resets fairness every epoch. By default fairness is just added")
 @click.option('-use_adv_dataset', '--use_adv_dataset', type=bool, default=True, help="if True: output includes aux")
 @click.option('-use_lr_schedule', '--use_lr_schedule', type=bool, default=True, help="if True: lr schedule is implemented. Note that this is only for simple trainign loop and not for three phase ones.")

@@ -131,6 +131,14 @@ if __name__ == '__main__':
         adv_scales = [0.0]
 
 
+    if fair_grad: #### A hack
+        hidden_l1_scale = 1.0
+    else:
+        hidden_l1_scale = 0.0
+
+    fair_grad = True #### A hack
+
+
 
 
     for adv_scale in adv_scales:
@@ -183,7 +191,7 @@ if __name__ == '__main__':
                                          mode_of_loss_scale='linear',
                                          training_loop_type='three_phase_custom',
                                          hidden_loss=False,
-                                         hidden_l1_scale=0.5,
+                                         hidden_l1_scale=hidden_l1_scale,
                                          hidden_l2_scale=0.5,
                                          reset_classifier=False,
                                          reset_adv=True,

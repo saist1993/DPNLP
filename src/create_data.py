@@ -478,7 +478,7 @@ class SimpleAdvDatasetReader():
         self.batch_size = params['batch_size']
         self.fairness_iterator = params['fairness_iterator']
         self.train_split = .80
-        self.is_fair_grad = params['fair_grad']
+        self.is_fair_grad = params['fair_grad_newer']
 
         if 'celeb' in self.dataset_name:
             self.X, self.y, self.s = get_celeb_data()
@@ -1196,7 +1196,7 @@ if __name__ == '__main__':
     params = {
         'batch_size': 64,
         'fairness_iterator': 'custom_3',
-        'fair_grad': False
+        'fair_grad_newer': False
     }
 
     dataset = EncodedBiasInBios(dataset_name, **params)

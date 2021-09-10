@@ -34,7 +34,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
     task = other_params['task']
     fairness_lookup = other_params['fairness_lookup']
     fairness_function = other_params['fairness_function']
-    is_fair_grad = other_params['is_fair_grad']
+    is_fair_grad = other_params['use_fair_grad']
 
 
     if task == 'domain_adaptation': # legacy code. Would not be useful here. But keeping it for consistency.

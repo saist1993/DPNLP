@@ -165,7 +165,7 @@ def main(emb_dim:int,
         'trim_data': trim_data,
         'sample_specific_class': sample_specific_class,
         'fairness_iterator': fairness_iterator,
-        'fair_grad': fair_grad, # Needs a larger validation split.
+        'fair_grad_newer': fair_grad, # Needs a larger validation split.
         'supervised_da': supervised_da
     }
     vocab, number_of_labels, number_of_aux_labels, iterators, other_data_metadata = \
@@ -318,7 +318,7 @@ def main(emb_dim:int,
         'classifier_learning_rate_second_phase': classifier_learning_rate_second_phase,
         'eps': eps,
         'eps_scale': eps_scale,
-        'fair_grad': fair_grad,
+        'fair_grad_newer': fair_grad,
         'reset_fairness': reset_fairness,
         'use_lr_schedule': use_lr_schedule,
         'lr_scheduler': lr_scheduler,
@@ -339,6 +339,12 @@ def main(emb_dim:int,
 
 
     if fair_grad:
+        # now we want to use baseline and adv setup here.
+        #
+        if hidden_l1_scale == 1: # A HACK. Not Clean solution!!!!
+            training_loop_params['use_fair_grad'] = True
+        else:
+            training_loop_params['use_fair_grad'] = False
         best_test_acc, best_valid_acc, test_acc_at_best_valid_acc = fair_grad_training_loop(
             n_epochs=epochs,
             model=model,
