@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from sklearn.metrics import confusion_matrix
 
-def equal_odds(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
+def old_equal_odds(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
     """
 
     :param preds: output/prediction of the model
@@ -45,7 +45,7 @@ def equal_odds(preds, y, s, device, total_no_main_classes, total_no_aux_classes,
     return group_fairness, fairness_lookup
 
 
-def demographic_parity(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
+def old_demographic_parity(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
     """
     I thyink this is wrong. verify this Michael
     We assume y to be 0,1  that is y can only take 1 or 0 as the input.
@@ -100,9 +100,9 @@ def demographic_parity(preds, y, s, device, total_no_main_classes, total_no_aux_
     return group_fairness, fairness_lookup
 
 
-
-
-def new_demographic_parity(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
+def demographic_parity(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
+    """This is the new implementation of demographic parity.
+     In this case we are following very close to the definition proposed in the FairGrad Paper. """
 
     unique_classes = torch.sort(torch.unique(y))[0] # For example: [doctor, nurse, engineer]
     fairness = torch.zeros(s.shape).to(device)
@@ -112,24 +112,27 @@ def new_demographic_parity(preds, y, s, device, total_no_main_classes, total_no_
 
 
     for uc in unique_classes: # iterating over each class say: uc=doctor for the first iteration
-        group_fairness[uc] = {}
+        group_fairness[uc.item()] = {}
         positive_rate = torch.mean((preds == uc).float())
 
         for group in unique_groups: # iterating over each group say: group=male for the firt iteration
 
-            mask_pos = (s == group, y==uc) # gender = male
+            mask_pos = torch.logical_and(s == group, y==uc) # gender = male
             mask_group = (s==group)
 
             g_fairness_pos = torch.mean((preds[mask_group] == uc).float()) - positive_rate
             g_fairness_pos = torch.sign(g_fairness_pos) * torch.clip(torch.abs(g_fairness_pos) - epsilon, 0, None)
             fairness[mask_pos] = g_fairness_pos
-            group_fairness[uc][group] = g_fairness_pos
+            group_fairness[uc.item()][group.item()] = g_fairness_pos.item()
             fairness_lookup[int(uc.item()),int(group.item())] = g_fairness_pos
 
     return group_fairness, fairness_lookup
 
 
-def new_equal_odds(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
+
+def equal_odds(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
+    """This is the new implementation of demographic parity.
+         In this case we are following very close to the definition proposed in the FairGrad Paper. """
     unique_classes = torch.sort(torch.unique(y))[0]  # For example: [doctor, nurse, engineer]
     fairness = torch.zeros(s.shape).to(device)
     unique_groups = torch.sort(torch.unique(s))[0]  # For example: [Male, Female]
@@ -153,7 +156,7 @@ def new_equal_odds(preds, y, s, device, total_no_main_classes, total_no_aux_clas
 
     return group_fairness, fairness_lookup
 
-def demographic_parity_multiclass(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
+def old_demographic_parity_multiclass(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
     """
     This has been generalized for multiclass setup. This looks more close to equal odds!
     We assume y to be 0,1  that is y can only take 1 or 0 as the input.
@@ -209,9 +212,7 @@ def demographic_parity_multiclass(preds, y, s, device, total_no_main_classes, to
 
     return group_fairness, fairness_lookup
 
-
-
-def equal_odds_multiclass(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
+def old_equal_odds_multiclass(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
     """
     This has been generalized for multiclass setup. This looks more close to equal odds!
     We assume y to be 0,1  that is y can only take 1 or 0 as the input.
@@ -611,7 +612,6 @@ def calculate_diff_equal_opportunity(preds, y, s, other_params):
     return DEO, {'deo': DEO}
 
 
-
 def get_positive_rate_multiclass(y_predicted, y_true):
     """Compute the positive rate for given predictions of the class label.
     Parameters
@@ -652,6 +652,7 @@ def get_positive_rate_multiclass(y_predicted, y_true):
         raise IOError
     pr = (tp+fp) / (tp+fp+tn+fn)
     return pr
+
 
 def get_true_positive_rate_multiclass(y_predicted, y_true):
     """Compute the true positive rate for given predictions of the class label.
@@ -981,6 +982,16 @@ def calculate_fairness_adult_sensr(preds, y, s, other_params):
     }
 
     return gender_rms, fairness
+
+
+def calculate_fairness_demographic_parity_fairgrad(preds, y, s, other_params):
+    """
+        In other_parmas group_fairness info is imperative
+        group_fairness = [[0.1,0.2],[0.3,0.4],[0.1,0.1]]
+    """
+
+
+
 
 def get_fairness_function(fairness_function):
     if fairness_function.lower() == 'equal_odds':

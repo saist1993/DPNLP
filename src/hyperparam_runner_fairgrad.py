@@ -105,7 +105,8 @@ if __name__ == '__main__':
     # fairness_iterator = args.fairness_iterator
     # fairness_function = args.fairness_function
     # fairness_score_function = fairness_function
-    fairness_functions = ['demographic_parity', 'equal_opportunity']
+    # fairness_functions = ['demographic_parity', 'equal_opportunity']
+    fairness_functions = ['demographic_parity']
 
 
 
@@ -197,7 +198,7 @@ if __name__ == '__main__':
                                          use_adv_dataset=True,
                                          use_lr_schedule=use_lr_schedule,
                                          fairness_function=fairness_function,
-                                         fairness_score_function="diff_" + fairness_function,
+                                         fairness_score_function="dummy_fairness",
                                          sample_specific_class=True,
                                          calculate_leakage=False,
                                          clip_fairness=fair_clip,

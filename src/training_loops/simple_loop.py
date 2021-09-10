@@ -36,7 +36,8 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
     all_hidden = []
     all_s = []
-
+    all_preds = []
+    all_y = []
 
     if is_adv:
         loss_aux_scale = other_params['loss_aux_scale']
@@ -77,7 +78,9 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
             acc_aux = torch.tensor(0.0)
 
         all_hidden.append(output['hidden'].detach().cpu().numpy())
+        all_preds.append(output['prediction'].argmax(1))
         all_s.append(items['aux'])
+        all_y.append(items['labels'])
 
         total_loss.backward()
         optimizer.step()
@@ -98,7 +101,9 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
     other_data = {
         'all_hidden' : np.row_stack(all_hidden),
-        'all_s' : torch.cat(all_s, out=torch.Tensor(len(all_s), all_s[0].shape[0])).to(device)
+        'all_s' : torch.cat(all_s, out=torch.Tensor(len(all_s), all_s[0].shape[0])).to(device).detach().cpu().numpy(),
+        'all_preds': torch.cat(all_preds, out=torch.Tensor(len(all_preds), all_preds[0].shape[0])).to(device).detach().cpu().numpy(),
+        'all_y': torch.cat(all_y, out=torch.Tensor(len(all_s), all_s[0].shape[0])).to(device).detach().cpu().numpy()
     }
 
     return return_output, other_data

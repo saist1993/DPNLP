@@ -34,6 +34,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
     task = other_params['task']
     fairness_lookup = other_params['fairness_lookup']
     fairness_function = other_params['fairness_function']
+    is_fair_grad = other_params['is_fair_grad']
 
 
     if task == 'domain_adaptation': # legacy code. Would not be useful here. But keeping it for consistency.
@@ -48,6 +49,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
     all_hidden = []
     all_s = []
+    all_group_fairness = []
 
     fairness_all_aux, fairness_all_labels = [], []
 
@@ -71,6 +73,8 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
                                                             epsilon=0.0)
     else:
         group_fairness = other_params['group_fairness']
+
+    fairness_lookup = torch.tensor(fairness_lookup).to(device)
 
     if is_adv:
         loss_aux_scale = other_params['loss_aux_scale']
@@ -111,29 +115,37 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         all_hidden.append(output['hidden'].detach().cpu().numpy())
         all_s.append(items['aux'])
 
-        fairness = fairness_lookup[items['labels'], items['aux']]
+        if is_fair_grad:
+            fairness = fairness_lookup[items['labels'], items['aux']]
 
-        if other_params['normalize_fairness']:
-            normalization = torch.mean(1.0-fairness)
+            if other_params['normalize_fairness']:
+                normalization = torch.mean(1.0-fairness)
+            else:
+                normalization = torch.tensor(1.0)
+
+            total_loss = torch.mean(total_loss * (1 - fairness.to(device))/normalization.to(device))
+
+
+            # fair grad calculations
+            fairness_all_preds = generate_predictions(model, fairness_iterator, device)
+            interm_group_fairness, interm_fairness_lookup = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
+                                                                s=fairness_all_aux, device=device,
+                                                                total_no_main_classes=total_no_main_classes,
+                                                                total_no_aux_classes=total_no_aux_classes,
+                                                                epsilon=0.0)
+            all_group_fairness.append(interm_group_fairness)
+
+            # log stuff here. interm_group_fairness
+
+            # Clipping
+            fairness_lookup = fairness_lookup + interm_fairness_lookup
+            if other_params['clip_fairness']:
+                fairness_lookup = torch.clip(fairness_lookup, None, 1.0)
         else:
-            normalization = torch.tensor(1.0)
+            total_loss = torch.mean(total_loss)
 
-        total_loss = torch.mean(total_loss * (1 - fairness.to(device))/normalization.to(device))
         total_loss.backward()
         optimizer.step()
-
-        # fair grad calculations
-        fairness_all_preds = generate_predictions(model, fairness_iterator, device)
-        interm_group_fairness, interm_fairness_lookup = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
-                                                            s=fairness_all_aux, device=device,
-                                                            total_no_main_classes=total_no_main_classes,
-                                                            total_no_aux_classes=total_no_aux_classes,
-                                                            epsilon=0.0)
-
-        # Clipping
-        fairness_lookup = fairness_lookup + interm_fairness_lookup
-        if other_params['clip_fairness']:
-            fairness_lookup = torch.clip(fairness_lookup, None, 1.0)
 
 
 
@@ -148,14 +160,16 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         'epoch_loss_main': np.mean(epoch_loss_main),
         'epoch_acc_main': np.mean(epoch_acc_main),
         'epoch_loss_aux': np.mean(epoch_loss_aux),
-        'epoch_acc_aux': np.mean(epoch_acc_aux)
+        'epoch_acc_aux': np.mean(epoch_acc_aux),
+        'group_fairness_all': group_fairness,
+        'fairness_f_all': all_group_fairness
     }
 
     other_data = {
         'all_hidden' : np.row_stack(all_hidden),
-        'all_s' : torch.cat(all_s, out=torch.Tensor(len(all_s), all_s[0].shape[0])).to(device),
+        'all_s' : torch.cat(all_s, out=torch.Tensor(len(all_s), all_s[0].shape[0])).to(device).detach().cpu().numpy(),
         'group_fairness': group_fairness,
-        'fairness_lookup': fairness_lookup
+        'fairness_lookup': fairness_lookup.detach().cpu().numpy()
     }
 
     return return_output, other_data
@@ -180,6 +194,8 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
     is_adv = other_params['is_adv'] # adv
     is_regression = other_params['is_regression']
     task = other_params['task']
+    fairness_function = other_params['fairness_function']
+
     if task == 'domain_adaptation':
         assert is_adv == True
 
@@ -242,6 +258,16 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
         grms, group_fairness = calculate_fairness_stuff(all_preds,y, all_s, other_params['fairness_score_function'],
                                                         device, extra_info) # update this after everything we need is available here.
 
+        total_no_aux_classes, total_no_main_classes = len(torch.unique(all_s)), len(
+            torch.unique(y))
+
+
+        interm_group_fairness, interm_fairness_lookup = fairness_function(preds=all_preds,
+                                                                          y=y,
+                                                                          s=all_s, device=device,
+                                                                          total_no_main_classes=total_no_main_classes,
+                                                                          total_no_aux_classes=total_no_aux_classes,
+                                                                          epsilon=0.0)
 
 
         return_output = {
@@ -252,12 +278,14 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
             'epoch_acc_aux': np.mean(epoch_acc_aux),
             'grms': grms,
             'group_fairness': group_fairness,
+            'fairness_f': interm_group_fairness
         }
 
         other_data = {
             'all_hidden': all_hidden,
-            'all_s': all_s,
-            'all_preds': all_preds
+            'all_s': all_s.detach().cpu().numpy(),
+            'all_preds': all_preds.detach().cpu().numpy(),
+            'all_y': y.detach().cpu().numpy()
         }
 
 
@@ -390,8 +418,27 @@ def training_loop( n_epochs:int,
 
         # model.eps = other_params['eps']
 
-        logger.info(f"valid dict: {val_output}")
-        logger.info(f"test dict: {test_output}")
+        # poping hiddens out!
+        _  = train_other_data.pop('all_hidden')
+        _ = val_other_data.pop('all_hidden')
+        _ = test_other_data.pop('all_hidden')
+
+        def transform_ouputs(input_dict):
+            new_dict = {}
+            for key, value in input_dict.items():
+                try:
+                    new_dict[key] = value.tolist()
+                except:
+                    new_dict[key] = value
+            return new_dict
+
+        logger.info(f"train dict: {transform_ouputs(train_output)}")
+        logger.info(f"train dict aux: {transform_ouputs(train_other_data)}")
+        logger.info(f"valid dict: {transform_ouputs(val_output)}")
+        logger.info(f"valid dict aux: {transform_ouputs(val_other_data)}")
+        logger.info(f"test dict: {transform_ouputs(test_output)}")
+        logger.info(f"test dict aux: {transform_ouputs(test_other_data)}")
+
 
         # calculate leakage - still need to be implemented.
         # @TODO: Complete the implementation of the leakge.
