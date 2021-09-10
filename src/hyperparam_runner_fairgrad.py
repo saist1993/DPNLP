@@ -105,8 +105,9 @@ if __name__ == '__main__':
     # fairness_iterator = args.fairness_iterator
     # fairness_function = args.fairness_function
     # fairness_score_function = fairness_function
-    # fairness_functions = ['demographic_parity', 'equal_opportunity']
-    fairness_functions = ['demographic_parity']
+    # fairness_functions = ['accuracy_parity']
+    fairness_functions = ['accuracy_parity', 'demographic_parity', 'equal_odds', 'equal_opportunity']
+    # fairness_functions = ['demographic_parity']'
 
 
 
