@@ -682,7 +682,11 @@ class EncodedBiasInBios():
         all_profession = list(set([t['p'] for t in self.train]))
         # profession_to_id = {profession: index for index, profession in enumerate(all_profession)}
         # pickle.dump(open("../datasets/bias_in_bios/prof_to_id", "wb"), profession_to_id )
-        profession_to_id = pickle.load(open("../datasets/bias_in_bios/profession_to_id.pickle", "rb"))
+        try:
+            profession_to_id = pickle.load(open("../datasets/bias_in_bios/profession_to_id.pickle", "rb"))
+        except:
+            profession_to_id = pickle.load(
+                open("/home/gmaheshwari/storage/fair_nlp_dataset/data/bias_in_bios/profession_to_id.pickle", "rb"))
 
         train_y = [profession_to_id[t['p']] for t in self.train]
         test_y = [profession_to_id[t['p']] for t in self.test]
