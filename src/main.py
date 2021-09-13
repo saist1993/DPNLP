@@ -374,7 +374,7 @@ def main(emb_dim:int,
 
         if model_name == 'linear_adv_encoded_emoji':
 
-            best_test_acc, best_valid_acc, test_acc_at_best_valid_acc  = diverse_training_loop(
+            best_test_acc, best_valid_acc, test_acc_at_best_valid_acc  = simple_training_loop(
                 n_epochs=epochs,
                 model=model,
                 iterator=iterators[0],
