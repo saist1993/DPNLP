@@ -164,8 +164,8 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         'epoch_loss_aux': np.mean(epoch_loss_aux),
         'epoch_acc_aux': np.mean(epoch_acc_aux),
         'group_fairness_all': group_fairness,
-        'fairness_f_all': all_group_fairness,
-        'left_hand_matrix': all_left_hand_matrix
+        'fairness_f_all': all_group_fairness[-1],
+        'left_hand_matrix': all_left_hand_matrix[-1]
     }
 
     other_data = {
