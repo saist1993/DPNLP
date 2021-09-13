@@ -67,7 +67,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
 
     if not fairness_lookup.any():
-        group_fairness, fairness_lookup = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
+        group_fairness, fairness_lookup, _ = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
                                                             s=fairness_all_aux, device=device,
                                                             total_no_main_classes=total_no_main_classes,
                                                             total_no_aux_classes=total_no_aux_classes,
