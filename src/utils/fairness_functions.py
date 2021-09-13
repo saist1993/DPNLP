@@ -109,6 +109,7 @@ def demographic_parity(preds, y, s, device, total_no_main_classes, total_no_aux_
     unique_groups = torch.sort(torch.unique(s))[0] # For example: [Male, Female]
     group_fairness = {} # a dict which keeps a track on how fairness is changing
     fairness_lookup = torch.zeros([total_no_main_classes, total_no_aux_classes])
+    left_hand_matrix = torch.zeros([total_no_main_classes, total_no_aux_classes])
 
 
     for uc in unique_classes: # iterating over each class say: uc=doctor for the first iteration
@@ -125,8 +126,9 @@ def demographic_parity(preds, y, s, device, total_no_main_classes, total_no_aux_
             fairness[mask_pos] = g_fairness_pos
             group_fairness[uc.item()][group.item()] = g_fairness_pos.item()
             fairness_lookup[int(uc.item()),int(group.item())] = g_fairness_pos
+            left_hand_matrix[int(uc.item()),int(group.item())] = positive_rate
 
-    return group_fairness, fairness_lookup
+    return group_fairness, fairness_lookup, left_hand_matrix
 
 
 
@@ -138,6 +140,7 @@ def equal_odds(preds, y, s, device, total_no_main_classes, total_no_aux_classes,
     unique_groups = torch.sort(torch.unique(s))[0]  # For example: [Male, Female]
     group_fairness = {}  # a dict which keeps a track on how fairness is changing
     fairness_lookup = torch.zeros([total_no_main_classes, total_no_aux_classes])
+    left_hand_matrix = torch.zeros([total_no_main_classes, total_no_aux_classes])
 
     for uc in unique_classes:  # iterating over each class say: uc=doctor for the first iteration
         group_fairness[uc.item()] = {}
@@ -153,8 +156,9 @@ def equal_odds(preds, y, s, device, total_no_main_classes, total_no_aux_classes,
             fairness[mask_pos] = g_fairness_pos
             group_fairness[uc.item()][group.item()] = g_fairness_pos.item()
             fairness_lookup[int(uc.item()), int(group.item())] = g_fairness_pos
+            left_hand_matrix[int(uc.item()), int(group.item())] = positive_rate
 
-    return group_fairness, fairness_lookup
+    return group_fairness, fairness_lookup, left_hand_matrix
 
 
 def equal_opportunity(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
@@ -176,6 +180,7 @@ def equal_opportunity(preds, y, s, device, total_no_main_classes, total_no_aux_c
     unique_groups = torch.sort(torch.unique(s))[0] # For example: [Male, Female]
     group_fairness = {} # a dict which keeps a track on how fairness is changing
     fairness_lookup = torch.zeros([total_no_main_classes, total_no_aux_classes])
+    left_hand_matrix = torch.zeros([total_no_main_classes, total_no_aux_classes])
 
     # positive_rate = torch.mean((preds[y == 1] == 1).float())  # prob(pred=doctor/y=doctor)
 
@@ -206,9 +211,10 @@ def equal_opportunity(preds, y, s, device, total_no_main_classes, total_no_aux_c
             fairness[mask_pos] = g_fairness_pos # imposing the scores on the mask.
             group_fairness[uc.item()][group.item()] = g_fairness_pos.item()
             fairness_lookup[int(uc.item()),int(group.item())] = g_fairness_pos
+            left_hand_matrix[int(uc.item()), int(group.item())] = positive_rate
 
 
-    return group_fairness, fairness_lookup
+    return group_fairness, fairness_lookup, left_hand_matrix
 
 def accuracy_parity(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
     unique_classes = torch.sort(torch.unique(y))[0] # For example: [doctor, nurse, engineer]
@@ -217,6 +223,8 @@ def accuracy_parity(preds, y, s, device, total_no_main_classes, total_no_aux_cla
     group_fairness = {} # a dict which keeps a track on how fairness is changing
     fairness_lookup = torch.zeros([total_no_main_classes, total_no_aux_classes])
     positive_rate = torch.mean((preds==y).float())
+    left_hand_matrix = torch.zeros([total_no_main_classes, total_no_aux_classes])
+
     for uc in unique_classes:
         group_fairness[uc.item()] = {}
 
@@ -228,8 +236,9 @@ def accuracy_parity(preds, y, s, device, total_no_main_classes, total_no_aux_cla
         for uc in unique_classes:
             group_fairness[uc.item()][group.item()] = g_fairness_pos.item() # all lables have same score for given protected attribute
             fairness_lookup[int(uc.item()), int(group.item())] = g_fairness_pos
+            left_hand_matrix[int(uc.item()), int(group.item())] = positive_rate
 
-    return group_fairness, fairness_lookup
+    return group_fairness, fairness_lookup, left_hand_matrix
 
 
 

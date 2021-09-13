@@ -50,6 +50,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
     all_hidden = []
     all_s = []
     all_group_fairness = []
+    all_left_hand_matrix = []
 
     fairness_all_aux, fairness_all_labels = [], []
 
@@ -128,12 +129,13 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
             # fair grad calculations
             fairness_all_preds = generate_predictions(model, fairness_iterator, device)
-            interm_group_fairness, interm_fairness_lookup = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
+            interm_group_fairness, interm_fairness_lookup, left_hand_matrix = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
                                                                 s=fairness_all_aux, device=device,
                                                                 total_no_main_classes=total_no_main_classes,
                                                                 total_no_aux_classes=total_no_aux_classes,
                                                                 epsilon=0.0)
             all_group_fairness.append(interm_group_fairness)
+            all_left_hand_matrix.append(left_hand_matrix)
 
             # log stuff here. interm_group_fairness
 
@@ -162,7 +164,8 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         'epoch_loss_aux': np.mean(epoch_loss_aux),
         'epoch_acc_aux': np.mean(epoch_acc_aux),
         'group_fairness_all': group_fairness,
-        'fairness_f_all': all_group_fairness
+        'fairness_f_all': all_group_fairness,
+        'left_hand_matrix': all_left_hand_matrix
     }
 
     other_data = {
@@ -262,7 +265,7 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
             torch.unique(y))
 
 
-        interm_group_fairness, interm_fairness_lookup = fairness_function(preds=all_preds,
+        interm_group_fairness, interm_fairness_lookup, left_hand_matrix = fairness_function(preds=all_preds,
                                                                           y=y,
                                                                           s=all_s, device=device,
                                                                           total_no_main_classes=total_no_main_classes,
@@ -278,7 +281,8 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
             'epoch_acc_aux': np.mean(epoch_acc_aux),
             'grms': grms,
             'group_fairness': group_fairness,
-            'fairness_f': interm_group_fairness
+            'fairness_f': interm_group_fairness,
+            'left_hand_matrix': left_hand_matrix
         }
 
         other_data = {
@@ -420,7 +424,12 @@ def training_loop( n_epochs:int,
 
         # poping hiddens out!
         _  = train_other_data.pop('all_hidden')
+        _ = train_other_data.pop('all_s')
+        _ = val_other_data.pop('all_s')
+        _ = val_other_data.pop('all_y')
         _ = val_other_data.pop('all_hidden')
+        _ = test_other_data.pop('all_s')
+        _ = test_other_data.pop('all_y')
         _ = test_other_data.pop('all_hidden')
 
         def transform_ouputs(input_dict):
