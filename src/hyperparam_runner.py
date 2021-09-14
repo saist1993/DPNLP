@@ -144,7 +144,7 @@ if __name__ == '__main__':
                              pad_token='<pad>',
                              unk_token='<unk>',
                              pre_trained_embeddings='../../bias-in-nlp/different_embeddings/simple_glove_vectors.vec',
-                             model_save_name=f'/home/gmaheshwari/storage/ baseline_seed_models_encoded_bias_in_bios/baseline_{seed}.pt',
+                             model_save_name=f'/home/gmaheshwari/storage/baseline_seed_models_encoded_bias_in_bios/baseline_{seed}.pt',
                              model='linear_adv',  # 'linear_adv_encoded_emoji' for diverse adv.
                              regression=False,
                              tokenizer_type='simple',
