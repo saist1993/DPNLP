@@ -158,6 +158,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         epoch_total_loss.append(total_loss.item())
     if all_group_fairness != []:
         all_group_fairness = all_group_fairness[-1]
+        all_left_hand_matrix = all_left_hand_matrix[-1]
 
     return_output = {
         'epoch_total_loss': np.mean(epoch_total_loss),
@@ -167,7 +168,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         'epoch_acc_aux': np.mean(epoch_acc_aux),
         'group_fairness_all': group_fairness,
         'fairness_f_all': all_group_fairness,
-        'left_hand_matrix': all_left_hand_matrix[-1]
+        'left_hand_matrix': all_left_hand_matrix
     }
 
     other_data = {
