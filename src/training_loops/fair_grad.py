@@ -156,6 +156,8 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         epoch_loss_aux.append(torch.mean(loss_aux).item())
         epoch_acc_aux.append(acc_aux.item())
         epoch_total_loss.append(total_loss.item())
+    if all_group_fairness != []:
+        all_group_fairness = all_group_fairness[-1]
 
     return_output = {
         'epoch_total_loss': np.mean(epoch_total_loss),
@@ -164,7 +166,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         'epoch_loss_aux': np.mean(epoch_loss_aux),
         'epoch_acc_aux': np.mean(epoch_acc_aux),
         'group_fairness_all': group_fairness,
-        'fairness_f_all': all_group_fairness[-1],
+        'fairness_f_all': all_group_fairness,
         'left_hand_matrix': all_left_hand_matrix[-1]
     }
 
@@ -429,6 +431,7 @@ def training_loop( n_epochs:int,
         _ = val_other_data.pop('all_y')
         _ = val_other_data.pop('all_hidden')
         _ = test_other_data.pop('all_s')
+        _ = test_other_data.pop('all_preds')
         _ = test_other_data.pop('all_y')
         _ = test_other_data.pop('all_hidden')
 
@@ -444,9 +447,9 @@ def training_loop( n_epochs:int,
         logger.info(f"train dict: {transform_ouputs(train_output)}")
         logger.info(f"train dict aux: {transform_ouputs(train_other_data)}")
         logger.info(f"valid dict: {transform_ouputs(val_output)}")
-        logger.info(f"valid dict aux: {transform_ouputs(val_other_data)}")
+        # logger.info(f"valid dict aux: {transform_ouputs(val_other_data)}")
         logger.info(f"test dict: {transform_ouputs(test_output)}")
-        logger.info(f"test dict aux: {transform_ouputs(test_other_data)}")
+        # logger.info(f"test dict aux: {transform_ouputs(test_other_data)}")
 
 
         # calculate leakage - still need to be implemented.
