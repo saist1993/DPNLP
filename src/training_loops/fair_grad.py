@@ -51,6 +51,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
     all_s = []
     all_group_fairness = []
     all_left_hand_matrix = []
+    all_sub_group_acc_matrix = []
 
     fairness_all_aux, fairness_all_labels = [], []
 
@@ -67,7 +68,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
 
     if not fairness_lookup.any():
-        group_fairness, fairness_lookup, _ = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
+        group_fairness, fairness_lookup, _, _ = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
                                                             s=fairness_all_aux, device=device,
                                                             total_no_main_classes=total_no_main_classes,
                                                             total_no_aux_classes=total_no_aux_classes,
@@ -129,13 +130,14 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
             # fair grad calculations
             fairness_all_preds = generate_predictions(model, fairness_iterator, device)
-            interm_group_fairness, interm_fairness_lookup, left_hand_matrix = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
+            interm_group_fairness, interm_fairness_lookup, left_hand_matrix, sub_group_acc_matrix = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
                                                                 s=fairness_all_aux, device=device,
                                                                 total_no_main_classes=total_no_main_classes,
                                                                 total_no_aux_classes=total_no_aux_classes,
                                                                 epsilon=0.0)
             all_group_fairness.append(interm_group_fairness)
             all_left_hand_matrix.append(left_hand_matrix)
+            all_sub_group_acc_matrix.append(sub_group_acc_matrix)
 
             # log stuff here. interm_group_fairness
 
@@ -159,6 +161,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
     if all_group_fairness != []:
         all_group_fairness = all_group_fairness[-1]
         all_left_hand_matrix = all_left_hand_matrix[-1]
+        all_sub_group_acc_matrix = all_sub_group_acc_matrix[-1]
 
     return_output = {
         'epoch_total_loss': np.mean(epoch_total_loss),
@@ -168,7 +171,8 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         'epoch_acc_aux': np.mean(epoch_acc_aux),
         'group_fairness_all': group_fairness,
         'fairness_f_all': all_group_fairness,
-        'left_hand_matrix': all_left_hand_matrix
+        'left_hand_matrix': all_left_hand_matrix,
+        'sub_group_acc_matrix': all_sub_group_acc_matrix
     }
 
     other_data = {
@@ -268,7 +272,7 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
             torch.unique(y))
 
 
-        interm_group_fairness, interm_fairness_lookup, left_hand_matrix = fairness_function(preds=all_preds,
+        interm_group_fairness, interm_fairness_lookup, left_hand_matrix, sub_group_acc_matrix = fairness_function(preds=all_preds,
                                                                           y=y,
                                                                           s=all_s, device=device,
                                                                           total_no_main_classes=total_no_main_classes,
@@ -285,7 +289,8 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
             'grms': grms,
             'group_fairness': group_fairness,
             'fairness_f': interm_group_fairness,
-            'left_hand_matrix': left_hand_matrix
+            'left_hand_matrix': left_hand_matrix,
+            'sub_group_acc_matrix': sub_group_acc_matrix
         }
 
         other_data = {
@@ -444,6 +449,10 @@ def training_loop( n_epochs:int,
                 except:
                     new_dict[key] = value
             return new_dict
+
+        test_output['epoch'] = epoch
+        val_output['epoch'] = epoch
+        train_output['epoch'] = epoch
 
         logger.info(f"train dict: {transform_ouputs(train_output)}")
         logger.info(f"train dict aux: {transform_ouputs(train_other_data)}")

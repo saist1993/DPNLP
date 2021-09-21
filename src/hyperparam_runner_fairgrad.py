@@ -30,6 +30,7 @@ if __name__ == '__main__':
     # parser.add_argument('--seed', '-seed', help="1234", type=int)
 
     parser.add_argument('--seed', '-seed', nargs="*", help="--seed 2 4 8 16 32 64 128 256 512 42", type=int)
+    parser.add_argument('--fairness_functions', '-fairness_functions', nargs="*", help="--fairness_functions accuracy_parity demographic_parity equal_odds equal_opportunity", type=str)
     parser.add_argument('--use_clipping', '-use_clipping', help="employs clipping!", type=str)
     parser.add_argument('--use_normalization', '-use_normalization', help="employs normalization", type=str)
 
@@ -61,7 +62,7 @@ if __name__ == '__main__':
 
     # logger init
     logging.basicConfig(filename=log_file_name,
-                        filemode='a',
+                        filemode='w',
                         format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                         datefmt='%H:%M:%S',
                         level=logging.DEBUG)
@@ -106,7 +107,10 @@ if __name__ == '__main__':
     # fairness_function = args.fairness_function
     # fairness_score_function = fairness_function
     # fairness_functions = ['accuracy_parity']
-    fairness_functions = ['accuracy_parity', 'demographic_parity', 'equal_odds', 'equal_opportunity']
+    if args.fairness_functions:
+        fairness_functions = args.fairness_functions
+    else:
+        fairness_functions = ['accuracy_parity', 'demographic_parity', 'equal_odds', 'equal_opportunity']
     # fairness_functions = ['demographic_parity']'
 
 
@@ -189,7 +193,7 @@ if __name__ == '__main__':
                                          config_dict="",
                                          experiment_name="hyper-param-search",
                                          only_perturbate=False,
-                                         mode_of_loss_scale='linear',
+                                         mode_of_loss_scale='exp',
                                          training_loop_type='three_phase_custom',
                                          hidden_loss=False,
                                          hidden_l1_scale=hidden_l1_scale,

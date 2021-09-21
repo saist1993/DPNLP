@@ -426,7 +426,7 @@ def get_projection_matrix(num_clfs, X_train, Y_train_gender, X_dev, Y_dev_gender
     min_acc = 0.
     # noise = False
     # dim = 768
-    dim = 300
+    dim = dim
     n = num_clfs
     # random_subset = 1.0
     start = time.time()
