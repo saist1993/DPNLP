@@ -90,7 +90,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         optimizer.zero_grad()
         output = model(items)
 
-        if task == 'domain_adaptation':
+        if task == 'unsupervised_domain_adaptation':
             output['prediction'] = output['prediction'][items['aux'] == 0]  # 0 is the src domain.
             items['labels'] = items['labels'][items['aux'] == 0]
 
@@ -108,7 +108,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         acc_main = accuracy_calculation_function(output['prediction'], items['labels'])
         if is_adv:
             acc_aux = accuracy_calculation_function(output['adv_output'], items['aux'])
-            total_loss = loss_main + (loss_aux_scale * loss_aux)
+            total_loss = loss_main + loss_aux_scale * loss_aux
         else:
             total_loss = loss_main
             loss_aux = torch.tensor(0.0)

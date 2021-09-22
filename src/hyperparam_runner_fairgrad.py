@@ -154,13 +154,7 @@ if __name__ == '__main__':
                         for fairness_function in fairness_functions:
                             for fairness_iterator in fairness_iterators:
                                 unique_id = str(uuid.uuid4())
-                                if dataset_name == 'encoded_emoji' and fair_grad:
-                                    if fairness_function == 'demographic_parity':
-                                        epochs = 30
-                                    else:
-                                        epochs = 10
-                                else:
-                                    epochs = args.epochs
+                                epochs = args.epochs
                                 try:
                                     logger.info(f"start of run - {unique_id}")
                                     main(emb_dim=300,
@@ -190,7 +184,7 @@ if __name__ == '__main__':
                                          is_post_hoc=False,
                                          train_main_model=True,
                                          use_wandb=False,
-                                         config_dict="",
+                                         config_dict="simple",
                                          experiment_name="hyper-param-search",
                                          only_perturbate=False,
                                          mode_of_loss_scale='exp',
@@ -202,7 +196,7 @@ if __name__ == '__main__':
                                          reset_adv=True,
                                          encoder_learning_rate_second_phase=0.01,
                                          classifier_learning_rate_second_phase=0.01,
-                                         trim_data=True,
+                                         trim_data=False,
                                          eps_scale='constant',
                                          optimizer=optimizer,
                                          lr=lr,
@@ -218,7 +212,7 @@ if __name__ == '__main__':
                                          normalize_fairness=fair_norm,
                                          fairness_iterator=fairness_iterator,
                                          supervised_da=False,
-                                         apply_noise_to_adv=False
+                                         apply_noise_to_adv=True
                                          )
                                     logger.info(f"end of run - {unique_id}")
                                 except KeyboardInterrupt:
