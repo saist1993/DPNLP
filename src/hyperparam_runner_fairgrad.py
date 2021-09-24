@@ -25,6 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_name', '-name', help="log file name", type=str)
     parser.add_argument('--dataset_name', '-dataset', help="name of the dataset", type=str)
     parser.add_argument('--epochs', '-epochs', help="epochs!", type=int)
+    parser.add_argument('--bs', '-bs', help="epochs!", type=int)
     parser.add_argument('--use_lr_schedule', '-use_lr_schedule', help="use_lr_schedule!", type=str)
     parser.add_argument('--fairness_iterator', '-fairness_iterator', nargs="*", help="--fairness_iterator custom_1 custom_2 custom_3 train", type=str)
     # parser.add_argument('--seed', '-seed', help="1234", type=int)
@@ -48,7 +49,10 @@ if __name__ == '__main__':
     assert args.dataset_name != None
     assert args.epochs != None
 
-    bs = 1000
+    if args.bs:
+        bs = args.bs
+    else:
+        bs = 1000
 
     # create main logging dir
     logs_dir = Path('../logs/fair_grad')
