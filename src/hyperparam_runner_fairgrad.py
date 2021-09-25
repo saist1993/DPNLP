@@ -26,6 +26,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_name', '-dataset', help="name of the dataset", type=str)
     parser.add_argument('--epochs', '-epochs', help="epochs!", type=int)
     parser.add_argument('--bs', '-bs', help="epochs!", type=int)
+    parser.add_argument('--lr', '-lr', help="lr!", type=float)
     parser.add_argument('--use_lr_schedule', '-use_lr_schedule', help="use_lr_schedule!", type=str)
     parser.add_argument('--fairness_iterator', '-fairness_iterator', nargs="*", help="--fairness_iterator custom_1 custom_2 custom_3 train", type=str)
     # parser.add_argument('--seed', '-seed', help="1234", type=int)
@@ -118,8 +119,10 @@ if __name__ == '__main__':
     # fairness_functions = ['demographic_parity']'
 
 
-
-    lrs = [('adam', 0.001)]
+    if args.lr:
+        lrs = [('adam', args.lr)]
+    else:
+        lrs = [('adam', 0.001)]
     fairness_iterators = args.fairness_iterator
     seeds = args.seed
 
