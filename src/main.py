@@ -268,8 +268,8 @@ def main(emb_dim:int,
         lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 optimizer=optimizer,
                 mode='min',
-                patience=3,
-                factor=0.1,
+                patience=4,
+                factor=0.02,
                 verbose=True
             )
     else:
