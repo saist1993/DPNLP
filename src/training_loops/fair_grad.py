@@ -143,7 +143,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
             # log stuff here. interm_group_fairness
 
             # Clipping
-            fairness_lookup = fairness_lookup + interm_fairness_lookup
+            fairness_lookup = fairness_lookup.to(device) + interm_fairness_lookup.to(device)
             if other_params['clip_fairness']:
                 fairness_lookup = torch.clip(fairness_lookup, None, 1.0)
         else:
