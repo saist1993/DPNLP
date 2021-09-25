@@ -269,7 +269,7 @@ def main(emb_dim:int,
                 optimizer=optimizer,
                 mode='min',
                 patience=4,
-                factor=0.02,
+                factor=0.8,
                 verbose=True
             )
     else:
