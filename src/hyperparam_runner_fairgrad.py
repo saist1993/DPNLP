@@ -173,7 +173,7 @@ if __name__ == '__main__':
                                          unk_token='<unk>',
                                          pre_trained_embeddings='../../bias-in-nlp/different_embeddings/simple_glove_vectors.vec',
                                          model_save_name='bilstm.pt',
-                                         model='linear_adv',
+                                         model='simple_linear', # linear_adv
                                          regression=False,
                                          tokenizer_type='simple',
                                          use_clean_text=True,

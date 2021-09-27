@@ -222,6 +222,37 @@ class LinearAdv(nn.Module):
         self.classifier.apply(initialize_parameters)  # don't know, if this is needed.
         self.encoder.apply(initialize_parameters)  # don't know, if this is needed.
 
+class SimpleLinear(nn.Module):
+    def __init__(self, params):
+        super().__init__()
+        input_dim = params['model_arch']['encoder']['input_dim']
+        output_dim = params['model_arch']['encoder']['output_dim']
+        self.encoder = nn.Linear(input_dim, output_dim)
+        self.encoder.apply(initialize_parameters)
+
+    def forward(self, params):
+        text = params['input']
+        prediction = self.encoder(text)
+
+        output = {
+            'prediction': prediction,
+            'adv_output': None,
+            'hidden': prediction, # just for compatabilit
+            'classifier_hiddens': None,
+            'adv_hiddens': None
+            # 'second_adv_output': second_adv_output
+
+        }
+
+        return output
+
+    @property
+    def layers(self):
+        return torch.nn.ModuleList([self.encoder])
+
+    def reset(self):
+        self.encoder.apply(initialize_parameters)  # don't know, if this is needed.
+
 
 
 class LinearAdvEncodedEmoji(nn.Module):
