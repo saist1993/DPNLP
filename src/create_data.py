@@ -3,6 +3,7 @@ import copy
 import torch
 import numpy as np
 from sklearn.datasets import load_svmlight_files
+from sklearn.preprocessing import StandardScaler
 from mytorch.utils.goodies import *
 
 # custom imports
@@ -541,6 +542,7 @@ class SimpleAdvDatasetReader():
 
 
     def run(self):
+
         dataset_size = self.X.shape[0] # examples*feature_size
         # the dataset is shuffled so as to get a unique test set for each seed.
         index = np.random.permutation(dataset_size)
@@ -557,6 +559,11 @@ class SimpleAdvDatasetReader():
         train_X, train_y, train_s = self.X[:dev_index,:], self.y[:dev_index], self.s[:dev_index]
         dev_X, dev_y, dev_s = self.X[dev_index:test_index, :], self.y[dev_index:test_index], self.s[dev_index:test_index]
         test_X, test_y, test_s = self.X[test_index:, :], self.y[test_index:], self.s[test_index:]
+
+        scaler = StandardScaler().fit(train_X)
+        train_X = scaler.transform(train_X)
+        dev_X = scaler.transform(dev_X)
+        test_X = scaler.transform(test_X)
 
 
 
