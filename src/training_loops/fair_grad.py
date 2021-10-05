@@ -53,18 +53,18 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
     all_left_hand_matrix = []
     all_sub_group_acc_matrix = []
 
-    fairness_all_aux, fairness_all_labels = [], []
-
-    for items in tqdm(fairness_iterator):
-        for key in items.keys(): # moving them to the correct device.
-            items[key] = items[key].to(device)
-        fairness_all_aux.append(items['aux'])  # aux label.
-        fairness_all_labels.append(items['labels']) # main task label.
-
-    fairness_all_aux = torch.cat(fairness_all_aux, out=torch.Tensor(len(fairness_all_aux), fairness_all_aux[0].shape[0])).to(device)
-    fairness_all_labels = torch.cat(fairness_all_labels, out=torch.Tensor(len(fairness_all_labels), fairness_all_labels[0].shape[0])).to(device)
-    total_no_aux_classes, total_no_main_classes = len(torch.unique(fairness_all_aux)), len(torch.unique(fairness_all_labels))
-    fairness_all_preds = generate_predictions(model, fairness_iterator, device) # think of this as model.fit. Iterates over the iterator and returns model prediction.
+    # fairness_all_aux, fairness_all_labels = [], []
+    #
+    # for items in tqdm(fairness_iterator):
+    #     for key in items.keys(): # moving them to the correct device.
+    #         items[key] = items[key].to(device)
+    #     fairness_all_aux.append(items['aux'])  # aux label.
+    #     fairness_all_labels.append(items['labels']) # main task label.
+    #
+    # fairness_all_aux = torch.cat(fairness_all_aux, out=torch.Tensor(len(fairness_all_aux), fairness_all_aux[0].shape[0])).to(device)
+    # fairness_all_labels = torch.cat(fairness_all_labels, out=torch.Tensor(len(fairness_all_labels), fairness_all_labels[0].shape[0])).to(device)
+    # total_no_aux_classes, total_no_main_classes = len(torch.unique(fairness_all_aux)), len(torch.unique(fairness_all_labels))
+    fairness_all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes = generate_predictions(model, fairness_iterator, device) # think of this as model.fit. Iterates over the iterator and returns model prediction.
 
 
     if not fairness_lookup.any():
@@ -130,7 +130,8 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
 
             # fair grad calculations
-            fairness_all_preds = generate_predictions(model, fairness_iterator, device)
+            fairness_all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes = generate_predictions(model, fairness_iterator, device)
+            print("ibne asd asd asd asd asd asd ")
             interm_group_fairness, interm_fairness_lookup, left_hand_matrix, sub_group_acc_matrix = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
                                                                 s=fairness_all_aux, device=device,
                                                                 total_no_main_classes=total_no_main_classes,
@@ -381,6 +382,7 @@ def training_loop( n_epochs:int,
 
         train_output, train_other_data = train(model, training_iterator, optimizer, criterion, device,
                                           accuracy_calculation_function, other_params)
+        print("done training ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
         other_params['group_fairness'], other_params['fairness_lookup'] = train_other_data['group_fairness'],\
                                                                           train_other_data['fairness_lookup']
 

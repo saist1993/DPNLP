@@ -99,12 +99,17 @@ def calculate_leakage(train_preds, train_labels, test_preds, test_labels, method
 
 def generate_predictions(model, iterator, device):
     all_preds = []
+    fairness_all_aux, fairness_all_labels = [], []
+
     with torch.no_grad():
         for items in tqdm(iterator):
 
             # setting up the device
             for key in items.keys():
                 items[key] = items[key].to(device)
+
+            fairness_all_aux.append(items['aux'])  # aux label.
+            fairness_all_labels.append(items['labels'])  # main task label.
 
             items['gradient_reversal'] = False
             output = model(items)
@@ -113,4 +118,10 @@ def generate_predictions(model, iterator, device):
 
     # flattening all_preds
     all_preds = torch.cat(all_preds, out=torch.Tensor(len(all_preds), all_preds[0].shape[0])).to(device)
-    return all_preds
+
+    fairness_all_aux = torch.cat(fairness_all_aux, out=torch.Tensor(len(fairness_all_aux), fairness_all_aux[0].shape[0])).to(device)
+    fairness_all_labels = torch.cat(fairness_all_labels, out=torch.Tensor(len(fairness_all_labels), fairness_all_labels[0].shape[0])).to(device)
+    total_no_aux_classes, total_no_main_classes = len(torch.unique(fairness_all_aux)), len(torch.unique(fairness_all_labels))
+
+
+    return all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes
