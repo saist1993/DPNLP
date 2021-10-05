@@ -64,10 +64,13 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
     # fairness_all_aux = torch.cat(fairness_all_aux, out=torch.Tensor(len(fairness_all_aux), fairness_all_aux[0].shape[0])).to(device)
     # fairness_all_labels = torch.cat(fairness_all_labels, out=torch.Tensor(len(fairness_all_labels), fairness_all_labels[0].shape[0])).to(device)
     # total_no_aux_classes, total_no_main_classes = len(torch.unique(fairness_all_aux)), len(torch.unique(fairness_all_labels))
-    fairness_all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes = generate_predictions(model, fairness_iterator, device) # think of this as model.fit. Iterates over the iterator and returns model prediction.
 
 
     if not fairness_lookup.any():
+
+        fairness_all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes = generate_predictions(
+            model, fairness_iterator,
+            device)  # think of this as model.fit. Iterates over the iterator and returns model prediction.
         group_fairness, fairness_lookup, _, _ = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
                                                             s=fairness_all_aux, device=device,
                                                             total_no_main_classes=total_no_main_classes,
