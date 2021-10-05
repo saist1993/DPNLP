@@ -134,7 +134,6 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
             # fair grad calculations
             fairness_all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes = generate_predictions(model, fairness_iterator, device)
-            print("ibne asd asd asd asd asd asd ")
             interm_group_fairness, interm_fairness_lookup, left_hand_matrix, sub_group_acc_matrix = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
                                                                 s=fairness_all_aux, device=device,
                                                                 total_no_main_classes=total_no_main_classes,
@@ -154,7 +153,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
             total_loss = torch.mean(total_loss)
 
         total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.05)
         optimizer.step()
 
 
