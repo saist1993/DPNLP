@@ -122,7 +122,7 @@ if __name__ == '__main__':
     if args.lr:
         lrs = [('sgd', args.lr)]
     else:
-        lrs = [('sgd', 0.01)]
+        lrs = [('sgd', 0.1)]
     fairness_iterators = args.fairness_iterator
     seeds = args.seed
 
