@@ -153,8 +153,8 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
             total_loss = torch.mean(total_loss)
 
         total_loss.backward()
-        # torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
-        torch.nn.utils.clip_grad_value_(model.parameters(), 0.15)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
+        # torch.nn.utils.clip_grad_value_(model.parameters(), 0.15)
         optimizer.step()
 
 
