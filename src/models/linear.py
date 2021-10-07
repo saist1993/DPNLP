@@ -274,16 +274,16 @@ class SimpleNonLinear(nn.Module):
     def forward(self, params):
         x = params['input']
         x = self.layer_1(x)
-        x = self.batchnorm1(x)
+        # x = self.batchnorm1(x)
         x = self.relu(x)
 
         x = self.layer_2(x)
-        x = self.batchnorm2(x)
+        # x = self.batchnorm2(x)
         x = self.relu(x)
         x = self.dropout(x)
 
         x = self.layer_3(x)
-        x = self.batchnorm3(x)
+        # x = self.batchnorm3(x)
         x = self.relu(x)
         x = self.dropout(x)
 
