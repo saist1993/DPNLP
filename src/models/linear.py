@@ -282,27 +282,27 @@ class SimpleNonLinear(nn.Module):
 
 
         x = self.layer_1(x)
-        x = self.batchnorm1(x)
+        # x = self.batchnorm1(x)
         x = self.relu(x)
 
         x = self.layer_2(x)
-        x = self.batchnorm2(x)
+        # x = self.batchnorm2(x)
         x = self.relu(x)
 
         x = self.layer_3(x)
-        x = self.batchnorm3(x)
+        # x = self.batchnorm3(x)
         x = self.relu(x)
 
         x = self.layer_4(x)
-        x = self.batchnorm4(x)
+        # x = self.batchnorm4(x)
         x = self.relu(x)
 
         x = self.layer_5(x)
-        x = self.batchnorm5(x)
+        # x = self.batchnorm5(x)
         x = self.relu(x)
 
         x = self.layer_6(x)
-        x = self.batchnorm6(x)
+        # x = self.batchnorm6(x)
         x = self.relu(x)
 
         # x = self.layer_2(x)
