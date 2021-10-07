@@ -41,6 +41,7 @@ if __name__ == '__main__':
     parser.add_argument('--is_adv', '-is_adv', help="True for using adv; else false (default).", type=str)
     parser.add_argument('--adv_start', '-adv_s', help="start of adv scale for increment increase for ex: 0.1", type=float)
     parser.add_argument('--adv_end', '-adv_e', help="end of adv scale 1.0", type=float)
+    parser.add_argument('--model', '-model', help="end of adv scale 1.0", type=str)
     # parser.add_argument('--fairness_iterator', '-fairness_iterator', help="the type of fairness iterator to use", type=str)
     # parser.add_argument('--fairness_function', '-fairness_function', help="demographic_parity/equal_opportunity/equal_odds", type=str)
 
@@ -122,7 +123,13 @@ if __name__ == '__main__':
     if args.lr:
         lrs = [('sgd', args.lr)]
     else:
-        lrs = [('sgd', 0.1)]
+        lrs = [('adam', 0.001)]
+
+
+    if args.model:
+        model = args.model
+    else:
+        model = 'simple_non_linear'
     fairness_iterators = args.fairness_iterator
     seeds = args.seed
 
@@ -173,7 +180,7 @@ if __name__ == '__main__':
                                          unk_token='<unk>',
                                          pre_trained_embeddings='../../bias-in-nlp/different_embeddings/simple_glove_vectors.vec',
                                          model_save_name='bilstm.pt',
-                                         model='simple_non_linear', # linear_adv
+                                         model=model, # linear_adv
                                          regression=False,
                                          tokenizer_type='simple',
                                          use_clean_text=True,
