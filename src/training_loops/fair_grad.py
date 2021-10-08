@@ -125,7 +125,8 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
             if other_params['normalize_fairness']:
                 normalization = torch.mean(1.0-fairness)
-                assert normalization > 0.0
+                normalization = abs(normalization)
+                # assert normalization > 0.0
             else:
                 normalization = torch.tensor(1.0)
 
