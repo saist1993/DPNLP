@@ -120,8 +120,14 @@ if __name__ == '__main__':
     # fairness_functions = ['demographic_parity']'
 
 
+    # if args.lr:
+    #     lrs = [('sgd', args.lr)]
+    # else:
+    #     lrs = [('adam', 0.001)]
+
+
     if args.lr:
-        lrs = [('sgd', args.lr)]
+        lrs = [('adam', 0.001)]
     else:
         lrs = [('adam', 0.001)]
 
