@@ -135,6 +135,45 @@ def demographic_parity(preds, y, s, device, total_no_main_classes, total_no_aux_
     return group_fairness, fairness_lookup, left_hand_matrix, per_group_accuracy
 
 
+def demographic_parity_eps(preds, y, s, device, total_no_main_classes, total_no_aux_classes, eps=0.5, gamma=100, epsilon=0.0):
+    """This is the new implementation of demographic parity.
+     In this case we are following very close to the definition proposed in the FairGrad Paper. """
+
+    unique_classes = torch.sort(torch.unique(y))[0] # For example: [doctor, nurse, engineer]
+    fairness = torch.zeros(s.shape).to(device)
+    unique_groups = torch.sort(torch.unique(s))[0] # For example: [Male, Female]
+    group_fairness = {} # a dict which keeps a track on how fairness is changing
+    fairness_lookup = torch.zeros([total_no_main_classes, total_no_aux_classes])
+    left_hand_matrix = torch.zeros([total_no_main_classes, total_no_aux_classes])
+    per_group_accuracy = torch.zeros([total_no_main_classes, total_no_aux_classes])
+
+
+    for uc in unique_classes: # iterating over each class say: uc=doctor for the first iteration
+        group_fairness[uc.item()] = {}
+        positive_rate = torch.mean((preds == uc).float())
+
+        for group in unique_groups: # iterating over each group say: group=male for the firt iteration
+
+            mask_pos = torch.logical_and(s == group, y==uc) # gender = male
+            mask_group = (s==group)
+
+            g_fairness_pos = torch.mean((preds[mask_group] == uc).float()) - positive_rate
+            g_fairness_pos = torch.sign(g_fairness_pos) * torch.clip(torch.abs(g_fairness_pos) - epsilon, 0, None)
+
+            if abs(g_fairness_pos) < eps:
+                g_fairness_pos = -1.0*eps/gamma
+
+            fairness[mask_pos] = g_fairness_pos
+            # add the eps-fairness here.
+            group_fairness[uc.item()][group.item()] = g_fairness_pos.item()
+            fairness_lookup[int(uc.item()),int(group.item())] = g_fairness_pos
+            left_hand_matrix[int(uc.item()),int(group.item())] = positive_rate
+            per_group_accuracy[int(uc.item()), int(group.item())] = torch.mean((preds[mask_pos] == y[mask_pos]).float()).item()
+
+    return group_fairness, fairness_lookup, left_hand_matrix, per_group_accuracy
+
+
+
 
 def equal_odds(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
     """This is the new implementation of demographic parity.
@@ -158,6 +197,40 @@ def equal_odds(preds, y, s, device, total_no_main_classes, total_no_aux_classes,
 
             g_fairness_pos = torch.mean((preds[mask_pos] == uc).float()) - positive_rate
             g_fairness_pos = torch.sign(g_fairness_pos) * torch.clip(torch.abs(g_fairness_pos) - epsilon, 0, None)
+            fairness[mask_pos] = g_fairness_pos
+            group_fairness[uc.item()][group.item()] = g_fairness_pos.item()
+            fairness_lookup[int(uc.item()), int(group.item())] = g_fairness_pos
+            left_hand_matrix[int(uc.item()), int(group.item())] = positive_rate
+            per_group_accuracy[int(uc.item()), int(group.item())] = torch.mean((preds[mask_pos] == y[mask_pos]).float()).item()
+
+    return group_fairness, fairness_lookup, left_hand_matrix, per_group_accuracy
+
+
+
+def equal_odds_eps(preds, y, s, device, total_no_main_classes, total_no_aux_classes, eps=0.5, gamma=100, epsilon=0.0):
+    """This is the new implementation of demographic parity.
+         In this case we are following very close to the definition proposed in the FairGrad Paper. """
+    unique_classes = torch.sort(torch.unique(y))[0]  # For example: [doctor, nurse, engineer]
+    fairness = torch.zeros(s.shape).to(device)
+    unique_groups = torch.sort(torch.unique(s))[0]  # For example: [Male, Female]
+    group_fairness = {}  # a dict which keeps a track on how fairness is changing
+    fairness_lookup = torch.zeros([total_no_main_classes, total_no_aux_classes])
+    left_hand_matrix = torch.zeros([total_no_main_classes, total_no_aux_classes])
+    per_group_accuracy = torch.zeros([total_no_main_classes, total_no_aux_classes])
+
+    for uc in unique_classes:  # iterating over each class say: uc=doctor for the first iteration
+        group_fairness[uc.item()] = {}
+        positive_rate = torch.mean((preds[y==uc] == uc).float())
+
+        for group in unique_groups:  # iterating over each group say: group=male for the firt iteration
+
+            mask_pos = torch.logical_and(s == group, y == uc)  # gender = male
+            # mask_group = (s == group)
+
+            g_fairness_pos = torch.mean((preds[mask_pos] == uc).float()) - positive_rate
+            g_fairness_pos = torch.sign(g_fairness_pos) * torch.clip(torch.abs(g_fairness_pos) - epsilon, 0, None)
+            if abs(g_fairness_pos) < eps:
+                g_fairness_pos = -1.0*eps/gamma
             fairness[mask_pos] = g_fairness_pos
             group_fairness[uc.item()][group.item()] = g_fairness_pos.item()
             fairness_lookup[int(uc.item()), int(group.item())] = g_fairness_pos
@@ -224,6 +297,67 @@ def equal_opportunity(preds, y, s, device, total_no_main_classes, total_no_aux_c
 
     return group_fairness, fairness_lookup, left_hand_matrix, per_group_accuracy
 
+
+
+def equal_opportunity_eps(preds, y, s, device, total_no_main_classes, total_no_aux_classes, eps=0.5, gamma=100, epsilon=0.0):
+    """
+    We assume y to be 0,1  that is y can only take 1 or 0 as the input.
+
+    y = 1 is considered to be a positive class while y=0 is considered to be a negative class. This is
+    unlike other methods where y=-1 is considered to be negative class.
+
+    In demographic parity the fairness score for class y=0 is 0.
+
+    """
+
+    unique_classes = torch.sort(torch.unique(y))[0] # For example: [doctor, nurse, engineer]
+    assert total_no_main_classes == 2 # only valid for two classes where the negative class is assumed to be y=0
+    assert len(unique_classes) <= 2 # as there can't be more than 2 classes
+
+    fairness = torch.zeros(s.shape).to(device)
+    unique_groups = torch.sort(torch.unique(s))[0] # For example: [Male, Female]
+    group_fairness = {} # a dict which keeps a track on how fairness is changing
+    fairness_lookup = torch.zeros([total_no_main_classes, total_no_aux_classes])
+    left_hand_matrix = torch.zeros([total_no_main_classes, total_no_aux_classes])
+    per_group_accuracy = torch.zeros([total_no_main_classes, total_no_aux_classes])
+
+    # positive_rate = torch.mean((preds[y == 1] == 1).float())  # prob(pred=doctor/y=doctor)
+
+    '''
+    it will have a structure of 
+    {
+        'doctor': {
+            'm' : 0.5, 
+            'f' : 0.6
+            }, 
+        'model': {
+        'm': 0.5,
+        'f': 0.7,
+        }
+    '''
+    for uc in unique_classes: # iterating over each class say: uc=doctor for the first iteration
+        group_fairness[uc.item()] = {}
+        positive_rate = torch.mean((preds[y == uc] == uc).float())
+
+        for group in unique_groups: # iterating over each group say: group=male for the firt iteration
+            mask_pos = torch.logical_and(y == uc, s == group)
+            if uc == 1:
+                 # find instances with y=doctor and s=male
+                g_fairness_pos = torch.mean((preds[mask_pos] == uc).float()) - positive_rate
+                g_fairness_pos = torch.sign(g_fairness_pos) * torch.clip(torch.abs(g_fairness_pos) - epsilon, 0, None)
+                if abs(g_fairness_pos) < eps:
+                    g_fairness_pos = -1.0 * eps / gamma
+            else: # uc = 0 which in our case is negative class
+                g_fairness_pos = torch.tensor(0.0).to(device) # TODO: check if g_fairness_pos in the obove if condition is of the same type
+            fairness[mask_pos] = g_fairness_pos # imposing the scores on the mask.
+            group_fairness[uc.item()][group.item()] = g_fairness_pos.item()
+            fairness_lookup[int(uc.item()),int(group.item())] = g_fairness_pos
+            left_hand_matrix[int(uc.item()), int(group.item())] = positive_rate
+            per_group_accuracy[int(uc.item()), int(group.item())] = torch.mean((preds[mask_pos] == y[mask_pos]).float()).item()
+
+
+    return group_fairness, fairness_lookup, left_hand_matrix, per_group_accuracy
+
 def accuracy_parity(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
     unique_classes = torch.sort(torch.unique(y))[0] # For example: [doctor, nurse, engineer]
     fairness = torch.zeros(s.shape).to(device)
@@ -254,7 +388,34 @@ def accuracy_parity(preds, y, s, device, total_no_main_classes, total_no_aux_cla
 
 
 
+def accuracy_parity_eps(preds, y, s, device, total_no_main_classes, total_no_aux_classes, eps=0.5, gamma=100, epsilon=0.0):
+    unique_classes = torch.sort(torch.unique(y))[0] # For example: [doctor, nurse, engineer]
+    fairness = torch.zeros(s.shape).to(device)
+    unique_groups = torch.sort(torch.unique(s))[0] # For example: [Male, Female]
+    group_fairness = {} # a dict which keeps a track on how fairness is changing
+    fairness_lookup = torch.zeros([total_no_main_classes, total_no_aux_classes])
+    positive_rate = torch.mean((preds==y).float())
+    left_hand_matrix = torch.zeros([total_no_main_classes, total_no_aux_classes])
+    per_group_accuracy = torch.zeros([total_no_main_classes, total_no_aux_classes])
 
+    for uc in unique_classes:
+        group_fairness[uc.item()] = {}
+
+    for group in unique_groups:
+        mask_group = (s == group)
+        g_fairness_pos = torch.mean((preds[mask_group] == y[mask_group]).float()) - positive_rate
+        g_fairness_pos = torch.sign(g_fairness_pos) * torch.clip(torch.abs(g_fairness_pos) - epsilon, 0, None)
+        if abs(g_fairness_pos) < eps:
+            g_fairness_pos = -1.0 * eps / gamma
+        fairness[mask_group] = g_fairness_pos # all males have same score irrespective of lable.
+        for uc in unique_classes:
+            mask_pos = torch.logical_and(s == group, y == uc)
+            group_fairness[uc.item()][group.item()] = g_fairness_pos.item() # all lables have same score for given protected attribute
+            fairness_lookup[int(uc.item()), int(group.item())] = g_fairness_pos
+            left_hand_matrix[int(uc.item()), int(group.item())] = positive_rate
+            per_group_accuracy[int(uc.item()), int(group.item())] = torch.mean((preds[mask_pos] == y[mask_pos]).float()).item()
+
+    return group_fairness, fairness_lookup, left_hand_matrix, per_group_accuracy
 
 
 def old_demographic_parity_multiclass(preds, y, s, device, total_no_main_classes, total_no_aux_classes, epsilon=0.0):
@@ -1053,6 +1214,14 @@ def get_fairness_function(fairness_function):
         fairness_function = equal_opportunity
     elif fairness_function.lower() == 'accuracy_parity':
         fairness_function = accuracy_parity
+    if fairness_function.lower() == 'equal_odds_eps':
+        fairness_function = equal_odds_eps
+    elif fairness_function.lower() == 'demographic_parity_eps':
+        fairness_function = demographic_parity_eps
+    elif fairness_function.lower() == 'equal_opportunity_eps':
+        fairness_function = equal_opportunity_eps
+    elif fairness_function.lower() == 'accuracy_parity_eps':
+        fairness_function = accuracy_parity_eps
     else:
         print("following type are supported: equal_odds, demographic_parity, equal_opportunity")
         raise NotImplementedError
