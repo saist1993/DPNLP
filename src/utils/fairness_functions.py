@@ -124,7 +124,9 @@ def demographic_parity(preds, y, s, device, total_no_main_classes, total_no_aux_
 
             g_fairness_pos = torch.mean((preds[mask_group] == uc).float()) - positive_rate
             g_fairness_pos = torch.sign(g_fairness_pos) * torch.clip(torch.abs(g_fairness_pos) - epsilon, 0, None)
+
             fairness[mask_pos] = g_fairness_pos
+            # add the eps-fairness here.
             group_fairness[uc.item()][group.item()] = g_fairness_pos.item()
             fairness_lookup[int(uc.item()),int(group.item())] = g_fairness_pos
             left_hand_matrix[int(uc.item()),int(group.item())] = positive_rate

@@ -713,6 +713,12 @@ class EncodedBiasInBios():
         test_X, test_y, test_s = self.test_cls, test_y, test_s
 
 
+        scaler = StandardScaler().fit(train_X)
+        train_X = scaler.transform(train_X)
+        dev_X = scaler.transform(dev_X)
+        test_X = scaler.transform(test_X)
+
+
 
 
 
@@ -876,6 +882,8 @@ class EncodedEmoji:
         X_train, y_train, s_train = np.asarray(X_train), np.asarray(y_train), np.asarray(s_train)
         X_dev, y_dev, s_dev = np.asarray(X_dev), np.asarray(y_dev), np.asarray(s_dev)
         X_test, y_test, s_test = np.asarray(X_test), np.asarray(y_test), np.asarray(s_test)
+
+
 
         all_x = [[a, b] for a, b in zip(y_train, s_train)]
         new_stuff = {}

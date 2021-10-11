@@ -298,6 +298,8 @@ def main(emb_dim:int,
         model = SimpleNonLinearAdv(model_params)
     # More stuff related to word embedding needs to be added here.
     model = model.to(device)
+    pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(pytorch_total_params)
     print(f"model is moved to {device}")
 
     opt_name = copy.copy(optimizer)
