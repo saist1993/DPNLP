@@ -42,6 +42,7 @@ if __name__ == '__main__':
     parser.add_argument('--adv_start', '-adv_s', help="start of adv scale for increment increase for ex: 0.1", type=float)
     parser.add_argument('--adv_end', '-adv_e', help="end of adv scale 1.0", type=float)
     parser.add_argument('--model', '-model', help="end of adv scale 1.0", type=str)
+    parser.add_argument('--optimizer', '-optimizer', help="adam/sgd default is sgd", type=str)
     # parser.add_argument('--fairness_iterator', '-fairness_iterator', help="the type of fairness iterator to use", type=str)
     # parser.add_argument('--fairness_function', '-fairness_function', help="demographic_parity/equal_opportunity/equal_odds", type=str)
 
@@ -125,17 +126,24 @@ if __name__ == '__main__':
     # else:
     #     lrs = [('adam', 0.001)]
 
+    if args.optimizer:
+        optimizer = args.optimizer
+    else:
+        optimizer = 'sgd'
 
     if args.lr:
-        lrs = [('adam', 0.001)]
+        lrs = [(optimizer, args.lr)]
     else:
-        lrs = [('adam', 0.001)]
+        lrs = [(optimizer, 0.1)]
 
 
     if args.model:
         model = args.model
     else:
-        model = 'simple_non_linear'
+        if args.is_adv:
+            model = 'simple_non_linear_adv'
+        else:
+            model = 'simple_non_linear'
     fairness_iterators = args.fairness_iterator
     seeds = args.seed
 

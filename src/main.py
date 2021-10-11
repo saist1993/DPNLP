@@ -275,6 +275,27 @@ def main(emb_dim:int,
 
         model = SimpleNonLinear(model_params)
 
+    elif model == 'simple_non_linear_adv':
+        model_arch = {
+            'encoder': {
+                'input_dim': input_dim,
+                'output_dim': output_dim
+            },
+            'adv': {
+                'number_of_layers': 2,
+                'input_dim': 64,
+                'hidden_dim':32,
+                'output_dim':number_of_aux_labels,
+                'dropout': 0.2
+            }
+        }
+
+        model_params = {
+            'model_arch': model_arch,
+            'device': device
+        }
+
+        model = SimpleNonLinearAdv(model_params)
     # More stuff related to word embedding needs to be added here.
     model = model.to(device)
     print(f"model is moved to {device}")

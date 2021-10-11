@@ -521,6 +521,85 @@ class LinearAdvEncodedEmoji(nn.Module):
         self.classifier.apply(initialize_parameters)  # don't know, if this is needed.
         self.encoder.apply(initialize_parameters)  # don't know, if this is needed.
 
+class SimpleNonLinearAdv(nn.Module):
+    def __init__(self, params):
+        super().__init__()
+
+        input_dim = params['model_arch']['encoder']['input_dim']
+        output_dim = params['model_arch']['encoder']['output_dim']
+
+        self.layer_1 = nn.Linear(input_dim, 128)
+        self.layer_2 = nn.Linear(128, 64)
+        self.layer_3 = nn.Linear(64, 32)
+        # self.layer_4 = nn.Linear(64, 32)
+        self.layer_out = nn.Linear(32, output_dim)
+
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(p=0.2)
+        self.batchnorm1 = nn.BatchNorm1d(128)
+        self.batchnorm2 = nn.BatchNorm1d(64)
+        self.batchnorm3 = nn.BatchNorm1d(32)
+        # self.batchnorm4 = nn.BatchNorm1d(32)
+
+        self.adv = Linear(params['model_arch']['adv'])
+        self.adv.apply(initialize_parameters)
+
+    def forward(self, params):
+        x = params['input']
+
+
+        x = self.layer_1(x)
+        x = self.batchnorm1(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+
+        x = self.layer_2(x)
+        x = self.batchnorm2(x)
+        x = self.relu(x)
+        enc_x = self.dropout(x)
+
+
+
+
+        enc_x_1 = self.layer_3(enc_x)
+        enc_x_1 = self.batchnorm3(enc_x_1)
+        enc_x_1 = self.relu(enc_x_1)
+        enc_x_1 = self.dropout(enc_x_1)
+
+        enc_x_1 = self.layer_out(enc_x_1)
+
+        # add adversarial branch here! - essentially before layer 3.
+        _params = {}
+        _params['input'] = GradReverse.apply(enc_x)
+        adv_output, adv_hiddens = self.adv(_params)
+
+        output = {
+            'prediction': enc_x_1,
+            'adv_output': adv_output,
+            'hidden': x,  # just for compatabilit
+            'classifier_hiddens': None,
+            'adv_hiddens': adv_hiddens
+            # 'second_adv_output': second_adv_output
+
+        }
+
+        return output
+
+    @property
+    def layers(self):
+        return torch.nn.ModuleList([self.layer_1, self.layer_2, self.layer_3, self.adv, self.layer_out])
+
+    def reset(self):
+        self.layer_1.apply(initialize_parameters)  # don't know, if this is needed.
+        self.layer_2.apply(initialize_parameters)  # don't know, if this is needed.
+        self.layer_3.apply(initialize_parameters)  # don't know, if this is needed.
+        self.layer_out.apply(initialize_parameters)  # don't know, if this is needed.
+        self.adv.apply(initialize_parameters)
+
+
+
+
+
 
 if __name__ == '__main__':
     #
