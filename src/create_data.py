@@ -883,6 +883,12 @@ class EncodedEmoji:
         X_dev, y_dev, s_dev = np.asarray(X_dev), np.asarray(y_dev), np.asarray(s_dev)
         X_test, y_test, s_test = np.asarray(X_test), np.asarray(y_test), np.asarray(s_test)
 
+        scaler = StandardScaler().fit(X_train)
+        X_train = scaler.transform(X_train)
+        X_dev = scaler.transform(X_dev)
+        X_test = scaler.transform(X_test)
+
+
 
 
         all_x = [[a, b] for a, b in zip(y_train, s_train)]
