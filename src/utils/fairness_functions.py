@@ -1214,7 +1214,7 @@ def get_fairness_function(fairness_function):
         fairness_function = equal_opportunity
     elif fairness_function.lower() == 'accuracy_parity':
         fairness_function = accuracy_parity
-    if fairness_function.lower() == 'equal_odds_eps':
+    elif fairness_function.lower() == 'equal_odds_eps':
         fairness_function = equal_odds_eps
     elif fairness_function.lower() == 'demographic_parity_eps':
         fairness_function = demographic_parity_eps
