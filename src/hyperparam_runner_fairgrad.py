@@ -1,4 +1,5 @@
 import uuid
+import torch
 import logging
 import argparse
 import traceback
@@ -45,6 +46,8 @@ if __name__ == '__main__':
     parser.add_argument('--optimizer', '-optimizer', help="adam/sgd default is sgd", type=str)
     # parser.add_argument('--fairness_iterator', '-fairness_iterator', help="the type of fairness iterator to use", type=str)
     # parser.add_argument('--fairness_function', '-fairness_function', help="demographic_parity/equal_opportunity/equal_odds", type=str)
+    torch.set_num_threads(2)
+    torch.set_num_interop_threads(2)
 
     args = parser.parse_args()
 
