@@ -158,7 +158,7 @@ if __name__ == '__main__':
         if args.adv_end == 0.0:
             adv_scales = [args.adv_start]
         else:
-            adv_scales = [round(i,2) for i in np.arange(args.adv_start,args.adv_end,0.1)]
+            adv_scales = [round(i,2) for i in np.arange(args.adv_start,args.adv_end,0.2)]
         fair_grad = False
     else:
         adv_scales = [0.0]
