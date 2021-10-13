@@ -50,6 +50,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
     all_hidden = []
     all_s = []
     all_group_fairness = []
+    all_group_fairness_original = []
     all_left_hand_matrix = []
     all_sub_group_acc_matrix = []
 
@@ -71,13 +72,14 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         fairness_all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes = generate_predictions(
             model, fairness_iterator,
             device)  # think of this as model.fit. Iterates over the iterator and returns model prediction.
-        group_fairness, fairness_lookup, _, _ = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
+        group_fairness, fairness_lookup, _, _, group_fairness_original = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
                                                             s=fairness_all_aux, device=device,
                                                             total_no_main_classes=total_no_main_classes,
                                                             total_no_aux_classes=total_no_aux_classes,
                                                             epsilon=0.0)
     else:
         group_fairness = other_params['group_fairness']
+        group_fairness_original = other_params['group_fairness']
 
     fairness_lookup = torch.tensor(fairness_lookup).to(device)
 
@@ -135,12 +137,13 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
             # fair grad calculations
             fairness_all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes = generate_predictions(model, fairness_iterator, device)
-            interm_group_fairness, interm_fairness_lookup, left_hand_matrix, sub_group_acc_matrix = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
+            interm_group_fairness, interm_fairness_lookup, left_hand_matrix, sub_group_acc_matrix,interm_group_fairness_original  = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
                                                                 s=fairness_all_aux, device=device,
                                                                 total_no_main_classes=total_no_main_classes,
                                                                 total_no_aux_classes=total_no_aux_classes,
                                                                 epsilon=0.0)
             all_group_fairness.append(interm_group_fairness)
+            all_group_fairness_original.append(interm_group_fairness_original)
             all_left_hand_matrix.append(left_hand_matrix)
             all_sub_group_acc_matrix.append(sub_group_acc_matrix)
 
@@ -167,6 +170,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         epoch_total_loss.append(total_loss.item())
     if all_group_fairness != []:
         all_group_fairness = all_group_fairness[-1]
+        all_group_fairness_original = all_group_fairness_original[-1]
         all_left_hand_matrix = all_left_hand_matrix[-1]
         all_sub_group_acc_matrix = all_sub_group_acc_matrix[-1]
 
@@ -177,7 +181,9 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
         'epoch_loss_aux': np.mean(epoch_loss_aux),
         'epoch_acc_aux': np.mean(epoch_acc_aux),
         'group_fairness_all': group_fairness,
+        'group_fairness_all_original': group_fairness_original,
         'fairness_f_all': all_group_fairness,
+        'fairness_f_all_original': all_group_fairness_original,
         'left_hand_matrix': all_left_hand_matrix,
         'sub_group_acc_matrix': all_sub_group_acc_matrix
     }
@@ -279,7 +285,7 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
             torch.unique(y))
 
 
-        interm_group_fairness, interm_fairness_lookup, left_hand_matrix, sub_group_acc_matrix = fairness_function(preds=all_preds,
+        interm_group_fairness, interm_fairness_lookup, left_hand_matrix, sub_group_acc_matrix, interm_group_fairness_original = fairness_function(preds=all_preds,
                                                                           y=y,
                                                                           s=all_s, device=device,
                                                                           total_no_main_classes=total_no_main_classes,
@@ -297,7 +303,8 @@ def evaluate(model, iterator, optimizer, criterion, device, accuracy_calculation
             'group_fairness': group_fairness,
             'fairness_f': interm_group_fairness,
             'left_hand_matrix': left_hand_matrix,
-            'sub_group_acc_matrix': sub_group_acc_matrix
+            'sub_group_acc_matrix': sub_group_acc_matrix,
+            'fairness_f_original': interm_group_fairness_original
         }
 
         other_data = {

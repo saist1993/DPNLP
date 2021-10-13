@@ -60,6 +60,7 @@ if __name__ == '__main__':
     else:
         bs = 1000
 
+
     # create main logging dir
     logs_dir = Path('../logs/fair_grad')
     create_dir(logs_dir)
