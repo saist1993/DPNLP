@@ -11,6 +11,7 @@ cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_7_bs_27000_linear_seed_256_eps --epochs 2500 --use_lr_schedule False --seed 256 -lr 0.1 --fairness_iterator custom_3 --use_clipping False --use_normalization True --simple_baseline False --fairness_functions equal_odds_eps --model simple_linear &> log7 &
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_8_bs_27000_linear_seed_256_eps --epochs 2500 --use_lr_schedule False --seed 256 -lr 0.1 --fairness_iterator custom_3 --use_clipping False --use_normalization True --simple_baseline False --fairness_functions equal_opportunity_eps --model simple_linear &> log8 &
 
+wait
 echo "second set"
 
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_1_bs_27000_non_linear_seed_256_eps --epochs 2500 --use_lr_schedule False --seed 256 -lr 0.1 --fairness_iterator custom_3 --use_clipping True --use_normalization True --simple_baseline False --fairness_functions demographic_parity_eps --model simple_non_linear &> log9 &
@@ -22,7 +23,7 @@ cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_7_bs_27000_non_linear_seed_256_eps --epochs 2500 --use_lr_schedule False --seed 256 -lr 0.1 --fairness_iterator custom_3 --use_clipping False --use_normalization True --simple_baseline False --fairness_functions equal_odds_eps --model simple_non_linear &> log15 &
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_8_bs_27000_non_linear_seed_256_eps --epochs 2500 --use_lr_schedule False --seed 256 -lr 0.1 --fairness_iterator custom_3 --use_clipping False --use_normalization True --simple_baseline False --fairness_functions equal_opportunity_eps --model simple_non_linear &> log16 &
 
-
+wait
 echo "third set"
 
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_1_bs_27000_linear_seed_512_eps --epochs 2500 --use_lr_schedule False --seed 512 -lr 0.1 --fairness_iterator custom_3 --use_clipping True --use_normalization True --simple_baseline False --fairness_functions demographic_parity_eps --model simple_linear &> log17 &
@@ -34,6 +35,7 @@ cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_7_bs_27000_linear_seed_512_eps --epochs 2500 --use_lr_schedule False --seed 512 -lr 0.1 --fairness_iterator custom_3 --use_clipping False --use_normalization True --simple_baseline False --fairness_functions equal_odds_eps --model simple_linear &> log23 &
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_8_bs_27000_linear_seed_512_eps --epochs 2500 --use_lr_schedule False --seed 512 -lr 0.1 --fairness_iterator custom_3 --use_clipping False --use_normalization True --simple_baseline False --fairness_functions equal_opportunity_eps --model simple_linear &> log24 &
 
+wait
 echo "fourth set"
 
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_1_bs_27000_non_linear_seed_512_eps --epochs 2500 --use_lr_schedule False --seed 512 -lr 0.1 --fairness_iterator custom_3 --use_clipping True --use_normalization True --simple_baseline False --fairness_functions demographic_parity_eps --model simple_non_linear &> log25 &
@@ -45,7 +47,7 @@ cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_7_bs_27000_non_linear_seed_512_eps --epochs 2500 --use_lr_schedule False --seed 512 -lr 0.1 --fairness_iterator custom_3 --use_clipping False --use_normalization True --simple_baseline False --fairness_functions equal_odds_eps --model simple_non_linear &> log31 &
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_8_bs_27000_non_linear_seed_512_eps --epochs 2500 --use_lr_schedule False --seed 512 -lr 0.1 --fairness_iterator custom_3 --use_clipping False --use_normalization True --simple_baseline False --fairness_functions equal_opportunity_eps --model simple_non_linear &> log32 &
 
-
+wait
 echo "fifth set"
 
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_1_bs_27000_linear_seed_1024_eps --epochs 2500 --use_lr_schedule False --seed 1024 -lr 0.1 --fairness_iterator custom_3 --use_clipping True --use_normalization True --simple_baseline False --fairness_functions demographic_parity_eps --model simple_linear &> log33 &
@@ -57,6 +59,7 @@ cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_7_bs_27000_linear_seed_1024_eps --epochs 2500 --use_lr_schedule False --seed 1024 -lr 0.1 --fairness_iterator custom_3 --use_clipping False --use_normalization True --simple_baseline False --fairness_functions equal_odds_eps --model simple_linear &> log39 &
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_8_bs_27000_linear_seed_1024_eps --epochs 2500 --use_lr_schedule False --seed 1024 -lr 0.1 --fairness_iterator custom_3 --use_clipping False --use_normalization True --simple_baseline False --fairness_functions equal_opportunity_eps --model simple_linear &> log40 &
 
+wait
 echo "sixth set"
 
 cd /data/pately/codes/DPNLP/src/;  python hyperparam_runner_fairgrad.py --is_adv False --adv_start 0.1 --adv_end 3.0 --dataset_name adult -bs 27133 --log_name take_fairgrad_1_bs_27000_non_linear_seed_1024_eps --epochs 2500 --use_lr_schedule False --seed 1024 -lr 0.1 --fairness_iterator custom_3 --use_clipping True --use_normalization True --simple_baseline False --fairness_functions demographic_parity_eps --model simple_non_linear &> log41 &
