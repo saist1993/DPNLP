@@ -494,7 +494,7 @@ class SimpleAdvDatasetReader():
         elif 'german' in self.dataset_name:
             self.X, self.y, self.s = get_german_data()
         elif 'adult' in self.dataset_name and 'multigroup' in self.dataset_name:
-            self.X, self.y, self.s = get_celeb_multigroups_data()
+            self.X, self.y, self.s = get_adult_multigroups_data()
         elif 'gaussian' in self.dataset_name:
             raise NotImplementedError
             # self.X, self.y, self.s = drh.get_gaussian_data(50000)
@@ -555,6 +555,7 @@ class SimpleAdvDatasetReader():
             dev_index = int(self.train_split * dataset_size) - int(self.train_split * dataset_size * .10)
 
         number_of_labels = len(np.unique(self.y))
+        number_of_aux_labels = len(np.unique(self.s))
 
         train_X, train_y, train_s = self.X[:dev_index,:], self.y[:dev_index], self.s[:dev_index]
         dev_X, dev_y, dev_s = self.X[dev_index:test_index, :], self.y[dev_index:test_index], self.s[dev_index:test_index]
@@ -619,7 +620,7 @@ class SimpleAdvDatasetReader():
         other_meta_data['dataset_name'] = self.dataset_name
 
 
-        return vocab, number_of_labels, number_of_labels, iterators, other_meta_data
+        return vocab, number_of_labels, number_of_aux_labels, iterators, other_meta_data
 
 class EncodedBiasInBios():
     def __init__(self, dataset_name:str,**params):
