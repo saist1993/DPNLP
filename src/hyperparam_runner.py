@@ -1,4 +1,5 @@
 import uuid
+import torch
 import logging
 import argparse
 import traceback
@@ -48,6 +49,11 @@ if __name__ == '__main__':
     assert args.log_name != None
     assert args.dataset_name != None
     assert args.epochs != None
+
+
+
+    torch.set_num_threads(2)
+    torch.set_num_interop_threads(2)
 
 
 
