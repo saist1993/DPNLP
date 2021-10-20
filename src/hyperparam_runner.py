@@ -40,6 +40,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', '-seed', nargs="*", help="1234 3567 7508", type=int)
     parser.add_argument('--diverse_adversary', '-diverse_adversary', help="True for using diverse adversary; else false (default).", type=str)
     parser.add_argument('--diverse_adv_lambda', '-diverse_adv_lambda', help="diverse_adv_lambda the orthogonal loss weight", type=float)
+    parser.add_argument('--model', '-model', help="diverse_adv_lambda the orthogonal loss weight", type=str)
 
 
     args = parser.parse_args()
@@ -96,6 +97,11 @@ if __name__ == '__main__':
         diverse_adv_lambda = args.diverse_adv_lambda
     else:
         diverse_adv_lambda = 0.0
+
+    if args.model:
+        model = args.model
+    else:
+        model = 'linear_adv_encoded_emoji'
 
 
     if dataset_name in ['blog', 'blog_v2']:
@@ -160,7 +166,7 @@ if __name__ == '__main__':
                              unk_token='<unk>',
                              pre_trained_embeddings='../../bias-in-nlp/different_embeddings/simple_glove_vectors.vec',
                              model_save_name=f'bilstm.pt',
-                             model='linear_adv',  # 'linear_adv_encoded_emoji' for diverse adv.
+                             model=model,  # 'linear_adv_encoded_emoji' for diverse adv.
                              regression=False,
                              tokenizer_type='simple',
                              use_clean_text=True,
