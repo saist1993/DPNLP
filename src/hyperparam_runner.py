@@ -39,6 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('--mode_of_loss_scale', '-mode_of_loss_scale', help="constant/linear/exp", type=str)
     parser.add_argument('--seed', '-seed', nargs="*", help="1234 3567 7508", type=int)
     parser.add_argument('--diverse_adversary', '-diverse_adversary', help="True for using diverse adversary; else false (default).", type=str)
+    parser.add_argument('--diverse_adv_lambda', '-diverse_adv_lambda', help="diverse_adv_lambda the orthogonal loss weight", type=float)
 
 
     args = parser.parse_args()
@@ -82,7 +83,7 @@ if __name__ == '__main__':
         if args.adv_end == 0.0:
             adv_scales = args.adv_start
         else:
-            adv_scales = [round(i,2) for i in np.arange(args.adv_start,args.adv_end,0.1)]
+            adv_scales = [round(i,2) for i in np.arange(args.adv_start,args.adv_end,0.2)]
     else:
         adv_scales = [0.0]
 
@@ -90,6 +91,11 @@ if __name__ == '__main__':
         diverse_adversary = True
     else:
         diverse_adversary = False
+
+    if args.diverse_adv_lambda:
+        diverse_adv_lambda = args.diverse_adv_lambda
+    else:
+        diverse_adv_lambda = 0.0
 
 
     if dataset_name in ['blog', 'blog_v2']:
@@ -198,10 +204,11 @@ if __name__ == '__main__':
                              calculate_leakage=calculate_leakage,
                              clip_fairness=True,
                              normalize_fairness=True,
-                             fairness_iterator='train',
+                             fairness_iterator='custom_3',
                              supervised_da=supervised_da,
                              apply_noise_to_adv=apply_noise_to_adv,
-                             diverse_adversary=diverse_adversary
+                             diverse_adversary=diverse_adversary,
+                             diverse_adv_lambda=diverse_adv_lambda
                              )
                         logger.info(f"end of run - {unique_id}")
                     except KeyboardInterrupt:

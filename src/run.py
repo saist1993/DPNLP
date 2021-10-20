@@ -61,7 +61,7 @@ from typing import Optional
 @click.option('-supervised_da', '--supervised_da', type=bool, default=False, help="Does supervised domain adapatation if true.")
 @click.option('-apply_noise_to_adv', '--apply_noise_to_adv', type=bool, default=True, help="if true; noise is applied to both adv and classifier else only classifier")
 @click.option('-diverse_adversary', '--diverse_adversary', type=bool, default=False, help="if true; add diverse adverasary with orthogonal loss function.")
-
+@click.option('-diverse_adv_lambda', '--diverse_adv_lambda', type=float, default=0.9, help="add loss of the diverse adversary aka the orthogonal loss.")
 def run(emb_dim:int,
          spacy_model:str,
          seed:int,
@@ -118,7 +118,8 @@ def run(emb_dim:int,
          fairness_iterator:str,
          supervised_da:bool,
          apply_noise_to_adv:bool,
-         diverse_adversary:bool
+         diverse_adversary:bool,
+         diverse_adv_lambda:float
          ):
     main.main(emb_dim,
              spacy_model,
@@ -176,7 +177,8 @@ def run(emb_dim:int,
              fairness_iterator,
              supervised_da,
              apply_noise_to_adv,
-              diverse_adversary
+              diverse_adversary,
+              diverse_adv_lambda
              )
 
 if __name__ == '__main__':

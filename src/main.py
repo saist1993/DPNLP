@@ -84,7 +84,8 @@ def main(emb_dim:int,
          fairness_iterator:str,
          supervised_da:bool,
          apply_noise_to_adv:bool,
-         diverse_adversary:bool
+         diverse_adversary:bool,
+         diverse_adv_lambda:float
          ):
     '''
         A place keep all the design choices.
@@ -389,7 +390,8 @@ def main(emb_dim:int,
         'normalize_fairness': normalize_fairness,
         'opt_name': opt_name,
         'lr': lr,
-        'apply_noise_to_adv': apply_noise_to_adv
+        'apply_noise_to_adv': apply_noise_to_adv,
+        'diverse_adv_lambda': diverse_adv_lambda
     }
 
 
