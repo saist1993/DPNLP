@@ -38,6 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('--use_lr_schedule', '-use_lr_schedule', help="use_lr_schedule!", type=str)
     parser.add_argument('--mode_of_loss_scale', '-mode_of_loss_scale', help="constant/linear/exp", type=str)
     parser.add_argument('--seed', '-seed', nargs="*", help="1234 3567 7508", type=int)
+    parser.add_argument('--diverse_adversary', '-diverse_adversary', help="True for using diverse adversary; else false (default).", type=str)
 
 
     args = parser.parse_args()
@@ -61,7 +62,11 @@ if __name__ == '__main__':
     seeds = args.seed
 
     supervised_da = False
-    apply_noise_to_adv = str2bool(args.apply_noise_to_adv)
+
+    if args.apply_noise_to_adv:
+        apply_noise_to_adv = str2bool(args.apply_noise_to_adv)
+    else:
+        apply_noise_to_adv = True
 
 
 
@@ -81,6 +86,10 @@ if __name__ == '__main__':
     else:
         adv_scales = [0.0]
 
+    if args.diverse_adversary:
+        diverse_adversary = True
+    else:
+        diverse_adversary = False
 
 
     if dataset_name in ['blog', 'blog_v2']:
@@ -191,7 +200,8 @@ if __name__ == '__main__':
                              normalize_fairness=True,
                              fairness_iterator='train',
                              supervised_da=supervised_da,
-                             apply_noise_to_adv=apply_noise_to_adv
+                             apply_noise_to_adv=apply_noise_to_adv,
+                             diverse_adversary=diverse_adversary
                              )
                         logger.info(f"end of run - {unique_id}")
                     except KeyboardInterrupt:

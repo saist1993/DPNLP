@@ -244,7 +244,8 @@ if __name__ == '__main__':
                                          normalize_fairness=fair_norm,
                                          fairness_iterator=fairness_iterator,
                                          supervised_da=False,
-                                         apply_noise_to_adv=True
+                                         apply_noise_to_adv=True,
+                                         diverse_adversary=False
                                          )
                                     logger.info(f"end of run - {unique_id}")
                                 except KeyboardInterrupt:

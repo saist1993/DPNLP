@@ -83,7 +83,8 @@ def main(emb_dim:int,
          normalize_fairness:bool,
          fairness_iterator:str,
          supervised_da:bool,
-         apply_noise_to_adv:bool
+         apply_noise_to_adv:bool,
+         diverse_adversary:bool
          ):
     '''
         A place keep all the design choices.
@@ -222,7 +223,6 @@ def main(emb_dim:int,
         model = LinearAdv(model_params)
 
     elif model == 'linear_adv_encoded_emoji':
-        print("here")
         model_params = {
             'input_dim': input_dim,
             'output_dim': output_dim,
@@ -296,6 +296,8 @@ def main(emb_dim:int,
         }
 
         model = SimpleNonLinearAdv(model_params)
+
+
     # More stuff related to word embedding needs to be added here.
     model = model.to(device)
     pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -425,7 +427,7 @@ def main(emb_dim:int,
         )
     else:
 
-        if model_name == 'linear_adv_encoded_emoji':
+        if diverse_adversary:
 
             best_test_acc, best_valid_acc, test_acc_at_best_valid_acc  = diverse_training_loop(
                 n_epochs=epochs,

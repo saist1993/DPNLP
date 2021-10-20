@@ -521,6 +521,8 @@ class LinearAdvEncodedEmoji(nn.Module):
         self.classifier.apply(initialize_parameters)  # don't know, if this is needed.
         self.encoder.apply(initialize_parameters)  # don't know, if this is needed.
 
+
+
 class SimpleNonLinearAdv(nn.Module):
     def __init__(self, params):
         super().__init__()
