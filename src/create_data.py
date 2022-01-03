@@ -709,9 +709,9 @@ class EncodedBiasInBios():
 
         number_of_labels = len(np.unique(train_y))
 
-        train_X, train_y, train_s = self.train_cls, train_y, train_s
-        dev_X, dev_y, dev_s = self.dev_cls, dev_y, dev_s
-        test_X, test_y, test_s = self.test_cls, test_y, test_s
+        train_X, train_y, train_s = np.asarray(self.train_cls), np.asarray(train_y), np.asarray(train_s)
+        dev_X, dev_y, dev_s = np.asarray(self.dev_cls), np.asarray(dev_y), np.asarray(dev_s)
+        test_X, test_y, test_s = np.asarray(self.test_cls), np.asarray(test_y), np.asarray(test_s)
 
 
         # scaler = StandardScaler().fit(train_X)
@@ -1216,6 +1216,44 @@ def create_fairness_data(train_X, train_y, train_s, dev_X, dev_y, dev_s, process
         return process_data(fairness_X, fairness_y, fairness_s, vocab=vocab)
     else:
         raise NotImplementedError
+
+
+def create_tuples_for_bias_in_bios(dataset_location:str, do_standard_scalar:bool=True):
+    data_location = Path(dataset_location)
+
+    train, dev, test = pickle.load(open(data_location / Path('train.pickle'), 'rb')), \
+                                      pickle.load(open(data_location / Path('dev.pickle'), 'rb')), \
+                                      pickle.load(open(data_location / Path('test.pickle'), 'rb'))
+
+    train_cls, dev_cls, test_cls = np.load(data_location / Path('train.pickle_bert_cls.npy')), \
+                                                  np.load(data_location / Path('dev.pickle_bert_cls.npy')), \
+                                                  np.load(data_location / Path('test.pickle_bert_cls.npy'))
+
+    profession_to_id = pickle.load(open(data_location/Path("profession_to_id.pickle"), "rb"))
+
+    train_y = [profession_to_id[t['p']] for t in train]
+    test_y = [profession_to_id[t['p']] for t in test]
+    dev_y = [profession_to_id[t['p']] for t in dev]
+
+    # gender
+    gender = {'f': 0, 'm': 1}
+    train_s = [gender[t['g']] for t in train]
+    test_s = [gender[t['g']] for t in test]
+    dev_s = [gender[t['g']] for t in dev]
+
+    number_of_labels = len(np.unique(train_y))
+
+    train_X, train_y, train_s = train_cls, train_y, train_s
+    dev_X, dev_y, dev_s = dev_cls, dev_y, dev_s
+    test_X, test_y, test_s = test_cls, test_y, test_s
+
+    if do_standard_scalar:
+        scaler = StandardScaler().fit(train_X)
+        train_X = scaler.transform(train_X)
+        dev_X = scaler.transform(dev_X)
+        test_X = scaler.transform(test_X)
+
+    return train_X, train_y, train_s, dev_X, dev_y, dev_s, test_X, test_y, test_s
 
 if __name__ == '__main__':
     dataset_name = 'amazon_electronics'

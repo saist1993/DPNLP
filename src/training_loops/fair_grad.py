@@ -137,6 +137,7 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
             # fair grad calculations
             fairness_all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes = generate_predictions(model, fairness_iterator, device)
+
             interm_group_fairness, interm_fairness_lookup, left_hand_matrix, sub_group_acc_matrix,interm_group_fairness_original  = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
                                                                 s=fairness_all_aux, device=device,
                                                                 total_no_main_classes=total_no_main_classes,
