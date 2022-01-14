@@ -171,8 +171,12 @@ class MDL:
             X_train = self.dataset_preds[dataset]
             Y_train = self.dataset_labels[dataset]
 
-            clf = MLPClassifier(alpha=1, max_iter=1000)
-            clf.fit(X_train, Y_train)
+            if i > 5:
+                clf = MLPClassifier(alpha=1, max_iter=200)
+                clf.fit(X_train, Y_train)
+            else:
+                clf = MLPClassifier(alpha=1, max_iter=800)
+                clf.fit(X_train, Y_train)
 
             next_dataset = self.all_datasets[i + 1]
             X_test = self.dataset_preds[next_dataset]
