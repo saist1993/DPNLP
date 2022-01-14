@@ -175,7 +175,7 @@ def main(emb_dim:int,
 
     print(f"number of labels: {number_of_labels}")
     # need to pickle vocab. Same name as model save name but with additional "_vocab.pkl"
-    pickle.dump(vocab, open(model_save_name + '_vocab.pkl', 'wb'))
+    # pickle.dump(vocab, open(model_save_name + '_vocab.pkl', 'wb'))
 
     # load pre-trained embeddings
     if use_pretrained_emb:
