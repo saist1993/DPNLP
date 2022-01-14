@@ -1,4 +1,7 @@
+import math
 import torch
+import traceback
+import numpy as np
 from tqdm.auto import tqdm
 from sklearn.svm import LinearSVC
 from sklearn.pipeline import make_pipeline
@@ -94,6 +97,11 @@ def calculate_leakage(train_preds, train_labels, test_preds, test_labels, method
         clf.fit(train_preds, train_labels) # remember aux labels
         leakage = clf.score(test_preds, test_labels) # remember aux labels
         return leakage
+    elif method == 'mdl':
+        # Use MDL
+        mdl = MDL(train_preds, train_labels, test_preds, test_labels)
+        leakage = mdl.get_score()
+        return leakage
     else:
         raise NotImplementedError
 
@@ -125,3 +133,57 @@ def generate_predictions(model, iterator, device):
 
 
     return all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes
+
+
+def custom_generate_prediction(output, items, device):
+    all_preds = output['prediction'].argmax(1)
+    # fairness_all_preds = torch.cat(all_preds, out=torch.Tensor(len(all_preds), all_preds[0].shape[0])).to(device)
+    fairness_all_aux = items['aux']
+    fairness_all_labels = items['labels']
+    total_no_aux_classes, total_no_main_classes = len(torch.unique(fairness_all_aux)), len(
+        torch.unique(fairness_all_labels))
+
+    return all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes
+
+
+class MDL:
+    # This code is from repo: https://github.com/brcsomnath/adversarial-scrubber
+    def __init__(self, train_preds, train_labels, test_preds, test_labels):
+        super(MDL, self).__init__()
+
+        self.dataset_preds = np.vstack((train_preds, test_preds))
+        self.dataset_labels = np.hstack((train_labels, test_labels))
+        self.index = np.arange(len(self.dataset_preds))
+        self.num_labels = len(np.unique(self.dataset_labels))
+        np.random.shuffle(self.index)
+
+        ratios = [0.001, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.125, 0.25, 0.5, 1]
+        self.all_datasets = []
+
+        for r in ratios:
+            self.all_datasets.append(self.index[:int(r * len(self.index))])
+
+    def get_score(self):
+        score = len(self.all_datasets[0]) * math.log(self.num_labels, 2)
+
+        print("Computing MDL ...")
+        for i, dataset in tqdm(enumerate(self.all_datasets[:-1]), total=len(self.all_datasets[:-1])):
+            X_train = self.dataset_preds[dataset]
+            Y_train = self.dataset_labels[dataset]
+
+            clf = MLPClassifier(alpha=1, max_iter=1000)
+            clf.fit(X_train, Y_train)
+
+            next_dataset = self.all_datasets[i + 1]
+            X_test = self.dataset_preds[next_dataset]
+            Y_test = self.dataset_labels[next_dataset]
+
+            Y_pred = clf.predict_proba(X_test)
+
+            for y_gold, y_pred in zip(Y_test, Y_pred):
+                try:
+                    score -= math.log(y_pred[int(y_gold)], 2)
+                except:
+                    traceback.print_exc()
+                    pass
+        return score / 1024

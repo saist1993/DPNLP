@@ -136,7 +136,13 @@ def train(model, iterator, optimizer, criterion, device, accuracy_calculation_fu
 
 
             # fair grad calculations
-            fairness_all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes = generate_predictions(model, fairness_iterator, device)
+            # fairness_all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes = generate_predictions(model, fairness_iterator, device)
+            fairness_all_preds, fairness_all_aux, fairness_all_labels, total_no_aux_classes, total_no_main_classes = custom_generate_prediction(output, items, device)
+            total_no_main_classes = 2
+            # all_preds = output['prediction'].argmax(1)
+            # fairness_all_preds = torch.cat(all_preds, out=torch.Tensor(len(all_preds), all_preds[0].shape[0])).to(device)
+            # fairness_all_aux =
+
 
             interm_group_fairness, interm_fairness_lookup, left_hand_matrix, sub_group_acc_matrix,interm_group_fairness_original  = fairness_function(preds=fairness_all_preds, y=fairness_all_labels,
                                                                 s=fairness_all_aux, device=device,

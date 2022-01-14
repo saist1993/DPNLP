@@ -296,10 +296,6 @@ class DomainAdaptationAmazon:
         return vocab, number_of_labels, number_of_labels, iterators, other_meta_data
 
 
-
-
-
-
 class MultiGroupSenSR:
     def __init__(self, dataset_name, **params):
         self.batch_size = params['batch_size']

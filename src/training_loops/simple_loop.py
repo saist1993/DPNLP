@@ -354,6 +354,10 @@ def training_loop( n_epochs:int,
             leaks['encoder_neural_network'] = leakage
             logging.info(f'hidden leakage at encoder representation with neural network method is {leakage}')
 
+            leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='mdl')
+            leaks['encoder_mdl'] = leakage
+            logging.info(f'hidden leakage at encoder representation with mdl method is {leakage}')
+
             train_preds = val_other_data['raw_all_preds']
             test_preds = test_other_data['raw_all_preds']
             train_labels = val_other_data['all_s']

@@ -379,12 +379,17 @@ def training_loop( n_epochs:int,
             test_preds = test_other_data['all_hidden']
             train_labels = val_other_data['all_s']
             test_labels = test_other_data['all_s']
+
             leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='svm')
             leaks['encoder_svm'] = leakage
             logging.info(f'hidden leakage at encoder representation with svm method is {leakage}')
             leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='sgd')
             leaks['encoder_sgd'] = leakage
             logging.info(f'hidden leakage at encoder representation with sgd method is {leakage}')
+
+            leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='mdl')
+            leaks['encoder_mdl'] = leakage
+            logging.info(f'hidden leakage at encoder representation with mdl method is {leakage}')
 
             leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='neural_network')
             leaks['encoder_neural_network'] = leakage
@@ -394,6 +399,7 @@ def training_loop( n_epochs:int,
             test_preds = test_other_data['raw_all_preds']
             train_labels = val_other_data['all_s']
             test_labels = test_other_data['all_s']
+
             leakage = calculate_leakage(train_preds, train_labels, test_preds, test_labels, method='svm')
             leaks['preds_svm'] = leakage
             logging.info(f'hidden leakage at final preds representation with svm method is {leakage}')
