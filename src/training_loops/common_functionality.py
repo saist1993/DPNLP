@@ -172,7 +172,7 @@ class MDL:
             Y_train = self.dataset_labels[dataset]
 
 
-            clf = MLPClassifier(alpha=1, max_iter=800)
+            clf = MLPClassifier(alpha=1, max_iter=1000)
             clf.fit(X_train, Y_train)
 
             next_dataset = self.all_datasets[i + 1]
