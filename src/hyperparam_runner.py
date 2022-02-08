@@ -121,10 +121,11 @@ if __name__ == '__main__':
     else:
         fairness_score_function = 'multiple_things'
 
-    if dataset_name == 'encoded_emoji' or 'blog' in dataset_name or "encoded_bias_in_bios" == dataset_name:
+    if dataset_name == 'encoded_emoji' or 'blog' in dataset_name or "encoded_bias_in_bios" == dataset_name :
         calculate_leakage = True
     else:
         calculate_leakage = False
+    calculate_leakage = True
     # create main logging dir
     logs_dir = Path('../logs')
     create_dir(logs_dir)
