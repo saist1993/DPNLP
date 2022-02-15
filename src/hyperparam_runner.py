@@ -172,7 +172,7 @@ if __name__ == '__main__':
                              pad_token='<pad>',
                              unk_token='<unk>',
                              pre_trained_embeddings='../../bias-in-nlp/different_embeddings/simple_glove_vectors.vec',
-                             model_save_name=f'saved_baseline_models/{dataset_name}_bilstm_{seed}.pt',
+                             model_save_name=f'dummy.pt',
                              model=model,  # 'linear_adv_encoded_emoji' for diverse adv.
                              regression=False,
                              tokenizer_type='simple',
