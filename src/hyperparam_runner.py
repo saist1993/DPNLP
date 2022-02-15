@@ -125,7 +125,7 @@ if __name__ == '__main__':
         calculate_leakage = True
     else:
         calculate_leakage = False
-    calculate_leakage = True
+    calculate_leakage = False
     # create main logging dir
     logs_dir = Path('../logs')
     create_dir(logs_dir)
@@ -172,7 +172,7 @@ if __name__ == '__main__':
                              pad_token='<pad>',
                              unk_token='<unk>',
                              pre_trained_embeddings='../../bias-in-nlp/different_embeddings/simple_glove_vectors.vec',
-                             model_save_name=f'dummy.pt',
+                             model_save_name=f'saved_baseline_models/{dataset_name}_bilstm_{seed}.pt',
                              model=model,  # 'linear_adv_encoded_emoji' for diverse adv.
                              regression=False,
                              tokenizer_type='simple',
